@@ -1239,15 +1239,26 @@ class LlamaConfigApp(App):
     }
     #buttons {
         dock: bottom;
-        align: center middle;
-        height: 4;
+        layout: vertical;
+        height: 6;
         background: #1d2021;
         border-top: solid #3c3836;
+        align: center middle;
+        padding-top: 1;
     }
-    #buttons Button {
+    #profile-buttons {
+        align: center middle;
+        height: 1;
+        margin-bottom: 1;
+    }
+    #profile-buttons Button {
         margin: 0 2;
         height: 1;
         min-height: 0;
+    }
+    #start-button-container {
+        align: center middle;
+        height: 2;
     }
     #btn-load-profile {
         background: #458588;
@@ -1280,6 +1291,12 @@ class LlamaConfigApp(App):
         background: #b8bb26;
         color: #1d2021;
         text-style: bold;
+        height: 2;
+        min-height: 0;
+        width: 24;
+        min-width: 24;
+        border: none;
+        margin: 0;
     }
     #btn-start:hover {
         background: #8ec07c;
@@ -1627,11 +1644,13 @@ class LlamaConfigApp(App):
                     yield Button("Copy Code", id="btn-copy-code")
                 yield Static("", id="command-preview")
 
-        with Horizontal(id="buttons"):
-            yield Button("Load Profile", id="btn-load-profile", variant="default")
-            yield Button("Save profile as...", id="btn-save-profile", variant="primary")
-            yield Button("Delete Profile", id="btn-delete-profile", variant="error")
-            yield Button("Start Server", id="btn-start", variant="success")
+        with Vertical(id="buttons"):
+            with Horizontal(id="profile-buttons"):
+                yield Button("Load Profile", id="btn-load-profile", variant="default")
+                yield Button("Save profile as...", id="btn-save-profile", variant="primary")
+                yield Button("Delete Profile", id="btn-delete-profile", variant="error")
+            with Horizontal(id="start-button-container"):
+                yield Button("Start Server", id="btn-start", variant="success")
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "btn-load-profile":
