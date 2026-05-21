@@ -189,6 +189,18 @@ def copy_to_clipboard(text: str) -> bool:
             return True
     except Exception:
         pass
+
+    try:
+        # OSC 52 fallback (works directly via standard ANSI escape sequence on modern terminals)
+        import base64
+        import sys
+        b64_text = base64.b64encode(text.encode("utf-8")).decode("utf-8")
+        sys.stdout.write(f"\033]52;c;{b64_text}\a")
+        sys.stdout.flush()
+        return True
+    except Exception:
+        pass
+
     return False
 
 class ParameterField(Horizontal):
@@ -1013,7 +1025,7 @@ class LlamaConfigApp(App):
         color: #ebdbb2;
         padding: 0 1;
         height: auto;
-        border: solid #3c3836;
+        border: none;
         margin-top: 0;
         width: 100%;
         content-align: left top;
@@ -1826,8 +1838,8 @@ class LlamaConfigApp(App):
             if idx == 0:
                 formatted_args.append(arg)
             else:
-                # If it's a flag starting with -
-                if arg.startswith("-"):
+                # If it's a flag starting with - (but not a negative numeric value like -1)
+                if arg.startswith("-") and not (len(arg) > 1 and arg[1].isdigit()):
                     formatted_args.append(f"\\\n  {arg}")
                 else:
                     # Quote arguments with spaces or special characters
