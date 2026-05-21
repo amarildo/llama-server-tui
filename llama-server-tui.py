@@ -421,8 +421,8 @@ class SaveProfileModal(ModalScreen[str]):
         background: #000000 60%;
     }
     #save-profile-container {
-        width: 50;
-        height: 13;
+        width: 55;
+        height: 18;
         background: #3c3836;
         border: thick #fabd2f;
         padding: 1 2;
@@ -436,11 +436,25 @@ class SaveProfileModal(ModalScreen[str]):
         margin-bottom: 1;
         background: #3c3836;
     }
-    #sp-label {
+    #sp-select-label, #sp-label {
         color: #ebdbb2;
         width: 100%;
-        margin-bottom: 1;
+        margin-bottom: 0;
         background: #3c3836;
+    }
+    #sp-select {
+        width: 100%;
+        height: 1;
+        border: none;
+        background: transparent;
+        margin-bottom: 1;
+    }
+    #sp-select SelectCurrent {
+        background: #504945;
+        color: #ebdbb2;
+        border: none;
+        height: 1;
+        padding: 0 1;
     }
     #sp-input {
         width: 100%;
@@ -472,18 +486,38 @@ class SaveProfileModal(ModalScreen[str]):
     }
     """
 
-    def __init__(self, current_name: str = "default"):
+    def __init__(self, profiles_dir: str, current_name: str = "default"):
         super().__init__()
+        self.profiles_dir = profiles_dir
         self.current_name = current_name
 
+    def _get_profiles(self) -> list[tuple[str, str]]:
+        opts = [("", "-- Choose Existing Profile (Optional) --")]
+        try:
+            files = sorted(os.listdir(self.profiles_dir))
+            for f in files:
+                if f.endswith(".json"):
+                    name = f[:-5]
+                    opts.append((name, f"📄 {name}"))
+        except Exception:
+            pass
+        return opts
+
     def compose(self) -> ComposeResult:
+        opts = self._get_profiles()
         with Container(id="save-profile-container"):
             yield Static("💾 Save Profile As", id="sp-title")
-            yield Label("Enter profile name:", id="sp-label")
+            yield Label("Choose existing profile to overwrite:", id="sp-select-label")
+            yield Select(opts, value="", id="sp-select", allow_blank=False)
+            yield Label("Or enter new profile name:", id="sp-label")
             yield Input(value=self.current_name, id="sp-input")
             with Horizontal(id="sp-buttons"):
                 yield Button("Cancel", id="btn-sp-cancel")
                 yield Button("Save", id="btn-sp-save")
+
+    def on_select_changed(self, event: Select.Changed) -> None:
+        if event.value:
+            self.query_one("#sp-input", Input).value = str(event.value)
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "btn-sp-cancel":
@@ -504,6 +538,88 @@ class SaveProfileModal(ModalScreen[str]):
 
     def action_cancel(self) -> None:
         self.dismiss("")
+
+
+class ConfirmDeleteModal(ModalScreen[bool]):
+    """Modal dialog to confirm deleting a profile."""
+    
+    BINDINGS = [
+        ("escape", "cancel", "Cancel"),
+        ("y", "confirm", "Confirm"),
+        ("n", "cancel", "Cancel"),
+    ]
+
+    DEFAULT_CSS = """
+    ConfirmDeleteModal {
+        align: center middle;
+        background: #000000 60%;
+    }
+    #confirm-container {
+        width: 50;
+        height: 11;
+        background: #3c3836;
+        border: thick #fb4934;
+        padding: 1 2;
+        align: center middle;
+    }
+    #confirm-title {
+        color: #fb4934;
+        text-style: bold;
+        text-align: center;
+        width: 100%;
+        margin-bottom: 1;
+        background: #3c3836;
+    }
+    #confirm-message {
+        color: #ebdbb2;
+        text-align: center;
+        width: 100%;
+        margin-bottom: 1;
+        background: #3c3836;
+    }
+    #confirm-buttons {
+        align: center middle;
+        height: auto;
+        background: #3c3836;
+    }
+    #confirm-buttons Button {
+        margin: 0 1;
+        min-width: 12;
+    }
+    #btn-confirm-yes {
+        background: #fb4934;
+        color: #282828;
+        text-style: bold;
+    }
+    #btn-confirm-no {
+        background: #665c54;
+        color: #ebdbb2;
+    }
+    """
+
+    def __init__(self, profile_name: str):
+        super().__init__()
+        self.profile_name = profile_name
+
+    def compose(self) -> ComposeResult:
+        with Container(id="confirm-container"):
+            yield Static("⚠ Confirm Delete", id="confirm-title")
+            yield Static(f"Are you sure you want to delete profile '{self.profile_name}'?", id="confirm-message")
+            with Horizontal(id="confirm-buttons"):
+                yield Button("Yes, Delete", id="btn-confirm-yes")
+                yield Button("No", id="btn-confirm-no")
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "btn-confirm-yes":
+            self.dismiss(True)
+        else:
+            self.dismiss(False)
+
+    def action_confirm(self) -> None:
+        self.dismiss(True)
+
+    def action_cancel(self) -> None:
+        self.dismiss(False)
 
 
 class LoadProfileModal(ModalScreen[str]):
@@ -539,16 +655,42 @@ class LoadProfileModal(ModalScreen[str]):
         width: 100%;
         margin-bottom: 1;
     }
-    .lp-entry {
-        width: 100%;
+    .lp-row {
+        layout: horizontal;
         height: 1;
+        align: left middle;
         background: #282828;
+        width: 100%;
+        margin-bottom: 0;
+    }
+    .lp-row:hover {
+        background: #3c3836;
+    }
+    .lp-entry {
+        width: 1fr;
+        height: 1;
+        background: transparent;
         color: #ebdbb2;
         padding: 0 1;
     }
     .lp-entry:hover {
-        background: #504945;
         color: #fabd2f;
+        text-style: bold;
+    }
+    .btn-lp-delete {
+        background: transparent;
+        color: #a89984;
+        min-width: 3;
+        width: 3;
+        height: 1;
+        min-height: 0;
+        border: none;
+        margin: 0;
+        padding: 0;
+    }
+    .btn-lp-delete:hover {
+        background: #fb4934;
+        color: #282828;
         text-style: bold;
     }
     #lp-buttons {
@@ -584,11 +726,22 @@ class LoadProfileModal(ModalScreen[str]):
             for f in files:
                 if f.endswith(".json"):
                     name = f[:-5]
-                    lbl = Label(f"📄 {name}", classes="lp-entry")
-                    lbl.profile_name = name
-                    yield lbl
+                    with Horizontal(classes="lp-row", id=f"row-{name}"):
+                        lbl = Label(f"📄 {name}", classes="lp-entry")
+                        lbl.profile_name = name
+                        yield lbl
+                        if name != "default":
+                            yield Button("🗑", id=f"btn-del-{name}", classes="btn-lp-delete")
         except Exception:
             yield Label("⚠ Failed to load profiles", classes="lp-entry")
+
+    def _refresh_list(self) -> None:
+        try:
+            lp_list = self.query_one("#lp-list", VerticalScroll)
+            lp_list.remove_children()
+            lp_list.mount(*list(self._build_entries()))
+        except Exception:
+            pass
 
     def on_click(self, event) -> None:
         widget = event.control if hasattr(event, 'control') else None
@@ -600,6 +753,34 @@ class LoadProfileModal(ModalScreen[str]):
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "btn-lp-cancel":
             self.dismiss("")
+        elif event.button.id and event.button.id.startswith("btn-del-"):
+            profile_name = event.button.id[8:]
+            self.app.push_screen(
+                ConfirmDeleteModal(profile_name),
+                callback=lambda confirmed: self._on_delete_confirmed(confirmed, profile_name)
+            )
+
+    def _on_delete_confirmed(self, confirmed: bool, profile_name: str) -> None:
+        if confirmed:
+            try:
+                profile_path = os.path.join(self.profiles_dir, f"{profile_name}.json")
+                if os.path.exists(profile_path):
+                    os.remove(profile_path)
+                
+                # If deleted active profile, revert back to default safely
+                if self.app.active_profile == profile_name:
+                    self.app.active_profile = "default"
+                    default_path = os.path.join(self.profiles_dir, "default.json")
+                    if os.path.exists(default_path):
+                        with open(default_path, "r") as f:
+                            default_data = json.load(f)
+                        self.app.load_profile_data(default_data)
+                    self.app.save_config()
+
+                self.app.show_notification(f"🗑 Profile '{profile_name}' deleted successfully 🗑", severity="success")
+                self._refresh_list()
+            except Exception as e:
+                self.app.show_notification(f"⚠ Error deleting profile: {e} ⚠", severity="error")
 
     def action_cancel(self) -> None:
         self.dismiss("")
@@ -1124,7 +1305,7 @@ class LlamaConfigApp(App):
             )
         elif event.button.id == "btn-save-profile":
             self.push_screen(
-                SaveProfileModal(current_name=self.active_profile),
+                SaveProfileModal(profiles_dir=self.profiles_dir, current_name=self.active_profile),
                 callback=self._on_profile_saved_as
             )
         elif event.button.id == "btn-start":
