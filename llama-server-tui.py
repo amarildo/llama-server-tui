@@ -2,6 +2,7 @@
 import os
 import json
 import shlex
+import subprocess
 from textual.app import App, ComposeResult
 from textual.screen import ModalScreen
 from textual.containers import VerticalScroll, Horizontal, Vertical, Container
@@ -169,6 +170,27 @@ SELECT_OPTIONS = {
     "CACHE_PROMPT": [("on", "on"), ("off", "off")],
 }
 
+def copy_to_clipboard(text: str) -> bool:
+    try:
+        # Try Wayland first (wl-copy)
+        if subprocess.run(["which", "wl-copy"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0:
+            p = subprocess.Popen(["wl-copy"], stdin=subprocess.PIPE, text=True)
+            p.communicate(input=text)
+            return True
+        # Try X11 xclip
+        elif subprocess.run(["which", "xclip"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0:
+            p = subprocess.Popen(["xclip", "-selection", "clipboard"], stdin=subprocess.PIPE, text=True)
+            p.communicate(input=text)
+            return True
+        # Try X11 xsel
+        elif subprocess.run(["which", "xsel"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0:
+            p = subprocess.Popen(["xsel", "--clipboard", "--input"], stdin=subprocess.PIPE, text=True)
+            p.communicate(input=text)
+            return True
+    except Exception:
+        pass
+    return False
+
 class ParameterField(Horizontal):
     enabled = reactive(True)
 
@@ -223,6 +245,8 @@ class ParameterField(Horizontal):
 
     def watch_enabled(self, enabled: bool) -> None:
         self.update_visuals()
+        if hasattr(self, "app") and self.app and hasattr(self.app, "update_dashboard"):
+            self.app.update_dashboard()
 
     def update_visuals(self) -> None:
         if not self.is_mounted:
@@ -926,6 +950,74 @@ class LlamaConfigApp(App):
         padding: 1 2;
         background: #1d2021;
     }
+    #dashboard-collapsible {
+        margin-bottom: 1;
+        margin-right: 2;
+    }
+    #dashboard-content {
+        padding: 0 1;
+        background: #282828;
+        height: auto;
+        layout: vertical;
+    }
+    #vram-meter-container {
+        height: 1;
+        background: transparent;
+        margin-bottom: 0;
+    }
+    #vram-title {
+        color: #ebdbb2;
+        text-style: bold;
+    }
+    #vram-text {
+        color: #ebdbb2;
+        text-style: bold;
+    }
+    #vram-bar {
+        background: transparent;
+        color: #b8bb26;
+        text-style: bold;
+        margin-bottom: 1;
+        width: 100%;
+    }
+    #preview-header {
+        height: 1;
+        background: transparent;
+        align: left middle;
+        margin-bottom: 0;
+    }
+    #preview-title {
+        color: #fabd2f;
+        text-style: bold;
+        width: 1fr;
+    }
+    #btn-copy-code {
+        height: 1;
+        min-width: 11;
+        background: #3c3836;
+        color: #8ec07c;
+        border: none;
+        padding: 0 1;
+        margin: 0;
+        text-style: bold;
+    }
+    #btn-copy-code:hover {
+        background: #8ec07c;
+        color: #1d2021;
+    }
+    #command-preview {
+        background: #1d2021;
+        color: #ebdbb2;
+        padding: 0 1;
+        height: auto;
+        min-height: 2;
+        max-height: 8;
+        border: solid #3c3836;
+        margin-top: 0;
+        width: 100%;
+        content-align: left top;
+        overflow-x: scroll;
+    }
     Input:focus {
         background: #fabd2f;
         color: #1d2021;
@@ -1318,6 +1410,18 @@ class LlamaConfigApp(App):
         ]
 
         with VerticalScroll(id="main-scroll"):
+            with Collapsible(title="📊 Real-Time Dashboard", id="dashboard-collapsible", collapsed=False):
+                with Container(id="dashboard-content"):
+                    with Horizontal(id="vram-meter-container"):
+                        yield Label("EST VRAM USAGE: ", id="vram-title")
+                        yield Label("0.0 GB / 24 GB (0%)", id="vram-text")
+                    yield Label("[░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░]", id="vram-bar")
+                    
+                    with Horizontal(id="preview-header"):
+                        yield Label("LIVE BASH COMMAND PREVIEW:", id="preview-title")
+                        yield Button("Copy Code", id="btn-copy-code")
+                    yield Static("", id="command-preview")
+
             for title, fields in sections:
                 with Collapsible(title=title, collapsed=False):
                     with Container(classes="grid-container"):
@@ -1376,22 +1480,39 @@ class LlamaConfigApp(App):
                 FileBrowserModal(start_path=tmpl_field.value, file_extensions=(".jinja", ".txt", ".tmpl")),
                 callback=self._on_template_selected,
             )
+        elif event.button.id == "btn-copy-code":
+            params = self.get_current_active_parameters()
+            cmd_str = self.build_live_command(params)
+            if copy_to_clipboard(cmd_str):
+                self.show_notification("✨ Command copied to clipboard! ✨", severity="success")
+            else:
+                self.show_notification("⚠ Clipboard tool missing (install xclip or wl-clipboard) ⚠", severity="error")
+
+    def on_input_changed(self, event: Input.Changed) -> None:
+        self.update_dashboard()
+
+    def on_select_changed(self, event: Select.Changed) -> None:
+        self.update_dashboard()
 
     def _on_model_selected(self, path: str) -> None:
         if path:
             self.query_one("#MODEL", Input).value = path
+            self.update_dashboard()
 
     def _on_bin_selected(self, path: str) -> None:
         if path:
             self.query_one("#BIN", Input).value = path
+            self.update_dashboard()
 
     def _on_mmproj_selected(self, path: str) -> None:
         if path:
             self.query_one("#MMPROJ", Input).value = path
+            self.update_dashboard()
 
     def _on_template_selected(self, path: str) -> None:
         if path:
             self.query_one("#CHAT_TEMPLATE_FILE", Input).value = path
+            self.update_dashboard()
 
     def _on_profile_loaded(self, profile_name: str) -> None:
         if profile_name:
@@ -1430,6 +1551,8 @@ class LlamaConfigApp(App):
             for k in DEFAULT_CONFIG:
                 self.enabled_fields[k] = k not in disabled
 
+        self.update_dashboard()
+
     def save_config(self):
         disabled = []
         try:
@@ -1461,6 +1584,268 @@ class LlamaConfigApp(App):
         except Exception as e:
             self.show_notification(f"⚠ Failed to save profile file: {e} ⚠", severity="error")
 
+    def on_mount(self) -> None:
+        self.update_dashboard()
+
+    def get_current_active_parameters(self) -> dict[str, str]:
+        params = {}
+        try:
+            fields = list(self.query(ParameterField))
+        except Exception:
+            fields = []
+        
+        if fields:
+            for field in fields:
+                if field.enabled:
+                    params[field.key] = field.value
+        else:
+            for k, v in self.config.items():
+                if self.enabled_fields.get(k, True):
+                    params[k] = str(v)
+        return params
+
+    def calculate_vram_estimate(self, params: dict[str, str]) -> tuple[float, int]:
+        # Estimate model weights memory: 27B model quantized Q4 is roughly 16.5GB
+        base_vram = 16.5
+        
+        # NGL offload layers
+        ngl = 0
+        if "NGL" in params:
+            try:
+                ngl = int(params["NGL"])
+            except ValueError:
+                ngl = 0
+                
+        model_offload_ratio = min(ngl / 99.0, 1.0)
+        weights_on_gpu = base_vram * model_offload_ratio
+        
+        # Context size
+        ctx = 8192
+        if "CTX" in params:
+            try:
+                ctx = int(params["CTX"])
+            except ValueError:
+                ctx = 8192
+                
+        # Flash Attention
+        use_flash_attn = True
+        if "FLASH_ATTN" in params:
+            use_flash_attn = params["FLASH_ATTN"] != "off"
+            
+        # KV Cache key type
+        cache_k = "q8_0"
+        if "CACHE_K" in params:
+            cache_k = params["CACHE_K"]
+            
+        cache_multiplier = 1.0
+        if cache_k == "q8_0":
+            cache_multiplier = 0.5
+        elif cache_k in ("q4_0", "q4_1", "q4_k_m", "q4_k_s"):
+            cache_multiplier = 0.25
+            
+        kv_memory = (ctx * 0.00015) * cache_multiplier
+        if not use_flash_attn:
+            kv_memory *= 1.4
+            
+        # Speculator overhead
+        speculator_overhead = 0.0
+        if "SPEC_TYPE" in params and params["SPEC_TYPE"] != "none":
+            speculator_overhead = 1.5
+            
+        # Multimodal Projector overhead
+        vision_projector_overhead = 0.0
+        if "MMPROJ" in params and params["MMPROJ"].strip():
+            vision_projector_overhead = 0.8
+            
+        total_estimate = weights_on_gpu + kv_memory + speculator_overhead + vision_projector_overhead
+        total_estimate = min(max(total_estimate, 0.0), 32.0)
+        
+        percentage = round((total_estimate / 24.0) * 100)
+        return total_estimate, percentage
+
+    def build_live_command(self, params: dict[str, str]) -> str:
+        # Build key maps to verify custom flags
+        flag_mapping = {
+            "MODEL": "-m",
+            "HOST": "--host",
+            "PORT": "--port",
+            "NGL": "-ngl",
+            "CTX": "-c",
+            "NP": "-np",
+            "THREADS": "-t",
+            "BATCH_SIZE": "-b",
+            "UBATCH_SIZE": "-ub",
+            "TEMP": "--temp",
+            "TOP_P": "--top-p",
+            "TOP_K": "--top-k",
+            "MIN_P": "--min-p",
+            "PRESENCE_PENALTY": "--presence-penalty",
+            "REPEAT_PENALTY": "--repeat-penalty",
+            "CACHE_K": "--cache-type-k",
+            "CACHE_V": "--cache-type-v",
+            "SPEC_TYPE": "--spec-type",
+            "SPEC_MAX": "--spec-draft-n-max",
+            "SPEC_MIN": "--spec-draft-p-min",
+            "SPEC_DRAFT_N_MIN": "--spec-draft-n-min",
+            "SEED": "-s",
+            "REASONING": "--reasoning",
+            "REASONING_FORMAT": "--reasoning-format",
+            "REASONING_BUDGET": "--reasoning-budget",
+            "CHAT_TEMPLATE": "--chat-template",
+            "CHAT_TEMPLATE_FILE": "--chat-template-file",
+            "TEMPLATE_KWARGS": "--chat-template-kwargs",
+            "MMPROJ": "--mmproj",
+            "CTX_CHECKPOINTS": "--ctx-checkpoints",
+            "CACHE_RAM": "--cache-ram",
+            "THREADS_BATCH": "--threads-batch",
+            "SPLIT_MODE": "--split-mode",
+            "MAIN_GPU": "--main-gpu",
+            "PREDICT": "--predict",
+            "DRAFT_MAX": "--draft-max",
+            "DRAFT_P_MIN": "--draft-p-min",
+            "IMAGE_MIN_TOKENS": "--image-min-tokens",
+            "IMAGE_MAX_TOKENS": "--image-max-tokens",
+            "TOOLS": "--tools",
+            "TENSOR_SPLIT": "--tensor-split",
+            "TIMEOUT": "--timeout",
+            "THREADS_HTTP": "--threads-http",
+            "CACHE_REUSE": "--cache-reuse",
+            "DRY_MULTIPLIER": "--dry-multiplier",
+            "DRY_BASE": "--dry-base",
+            "DRY_ALLOWED_LENGTH": "--dry-allowed-length",
+            "DRY_PENALTY_LAST_N": "--dry-penalty-last-n",
+            "XTC_PROBABILITY": "--xtc-probability",
+            "XTC_THRESHOLD": "--xtc-threshold",
+        }
+
+        cmd = []
+        
+        # Get binary path
+        bin_path = params.get("BIN", "~/llama.cpp/build/bin/llama-server")
+        bin_path = os.path.expanduser(bin_path)
+        cmd.append(bin_path)
+
+        # 1. Standard parameters (in standard order)
+        for key in flag_mapping:
+            if key in params:
+                val = params[key].strip()
+                if val:
+                    cmd.extend([flag_mapping[key], val])
+
+        # 2. Non-standard special flags
+        if "FLASH_ATTN" in params:
+            cmd.extend(["--flash-attn", params["FLASH_ATTN"]])
+        if "JINJA" in params:
+            if params["JINJA"].lower() in ("on", "1", "true", "yes"):
+                cmd.append("--jinja")
+            else:
+                cmd.append("--no-jinja")
+        if "MLOCK" in params:
+            if params["MLOCK"].lower() in ("on", "1", "true", "yes"):
+                cmd.append("--mlock")
+        if "METRICS" in params:
+            if params["METRICS"].lower() in ("on", "1", "true", "yes"):
+                cmd.append("--metrics")
+        if "WEBUI" in params:
+            if params["WEBUI"].lower() in ("on", "1", "true", "yes", "auto"):
+                cmd.append("--webui")
+            else:
+                cmd.append("--no-webui")
+        if "CONT_BATCHING" in params:
+            if params["CONT_BATCHING"].lower() in ("on", "1", "true", "yes"):
+                cmd.append("--cont-batching")
+            else:
+                cmd.append("--no-cont-batching")
+        if "MERGE_QKV" in params:
+            if params["MERGE_QKV"].lower() in ("on", "1", "true", "yes"):
+                cmd.append("--merge-qkv")
+        if "MERGE_EXPERTS" in params:
+            if params["MERGE_EXPERTS"].lower() in ("on", "1", "true", "yes"):
+                cmd.append("--merge-up-gate-experts")
+        if "API_KEY" in params and params["API_KEY"].strip():
+            cmd.extend(["--api-key", params["API_KEY"].strip()])
+        if "ALIAS" in params and params["ALIAS"].strip():
+            cmd.extend(["-a", params["ALIAS"].strip()])
+        if "MMPROJ_OFFLOAD" in params:
+            if params["MMPROJ_OFFLOAD"].lower() in ("off", "0", "false", "no"):
+                cmd.append("--no-mmproj-offload")
+        if "SKIP_CHAT_PARSING" in params:
+            if params["SKIP_CHAT_PARSING"].lower() in ("on", "1", "true", "yes"):
+                cmd.append("--skip-chat-parsing")
+        if "NUMA" in params:
+            if params["NUMA"] != "none":
+                cmd.extend(["--numa", params["NUMA"]])
+        if "NO_MMAP" in params:
+            if params["NO_MMAP"] == "on":
+                cmd.append("--no-mmap")
+        if "CACHE_PROMPT" in params:
+            if params["CACHE_PROMPT"] == "on":
+                cmd.append("--cache-prompt")
+            else:
+                cmd.append("--no-cache-prompt")
+        if "EXTRA_FLAGS" in params and params["EXTRA_FLAGS"].strip():
+            cmd.extend(shlex.split(params["EXTRA_FLAGS"].strip()))
+
+        # Formatting command with backslash wrapping for shell readability
+        formatted_args = []
+        for idx, arg in enumerate(cmd):
+            if idx == 0:
+                formatted_args.append(arg)
+            else:
+                # If it's a flag starting with -
+                if arg.startswith("-"):
+                    formatted_args.append(f"\\\n  {arg}")
+                else:
+                    # Quote arguments with spaces or special characters
+                    if any(char in arg for char in " []{}()*?&\"'"):
+                        formatted_args.append(shlex.quote(arg))
+                    else:
+                        formatted_args.append(arg)
+                        
+        return " ".join(formatted_args)
+
+    def update_dashboard(self) -> None:
+        if not self.is_mounted:
+            return
+            
+        try:
+            params = self.get_current_active_parameters()
+            
+            # VRAM estimate
+            total_estimate, percentage = self.calculate_vram_estimate(params)
+            
+            # Update VRAM Text
+            vram_text = self.query_one("#vram-text", Label)
+            vram_text.update(f"{total_estimate:.1f} GB / 24 GB ({percentage}%)")
+            
+            # Color coding threshold based on saturation
+            if percentage > 95:
+                vram_text.styles.color = "#fb4934" # Red
+                bar_color = "#fb4934"
+            elif percentage > 85:
+                vram_text.styles.color = "#fabd2f" # Gold
+                bar_color = "#fabd2f"
+            else:
+                vram_text.styles.color = "#ebdbb2" # Cream
+                bar_color = "#b8bb26" # Green
+                
+            # Build Unicode block meter progress bar (40 character width)
+            # █ (solid block) and ░ (light shade block)
+            filled_chars = min(max(round((percentage / 100.0) * 40), 0), 40)
+            empty_chars = 40 - filled_chars
+            meter_str = f"[{'█' * filled_chars}{'░' * empty_chars}]"
+            
+            vram_bar = self.query_one("#vram-bar", Label)
+            vram_bar.update(meter_str)
+            vram_bar.styles.color = bar_color
+            
+            # Update Live command preview
+            cmd_preview = self.query_one("#command-preview", Static)
+            live_command = self.build_live_command(params)
+            cmd_preview.update(live_command)
+            
+        except Exception:
+            pass
 
 
 if __name__ == "__main__":
