@@ -551,7 +551,7 @@ class LlamaConfigApp(App):
     }
     #buttons {
         dock: bottom;
-        align: center bottom;
+        align: center middle;
         height: 3;
         background: $surface;
         border-top: solid #3c3836;
