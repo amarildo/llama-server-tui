@@ -422,7 +422,7 @@ class SaveProfileModal(ModalScreen[str]):
     }
     #save-profile-container {
         width: 55;
-        height: 18;
+        height: 19;
         background: #3c3836;
         border: thick #fabd2f;
         padding: 1 2;
@@ -436,9 +436,16 @@ class SaveProfileModal(ModalScreen[str]):
         margin-bottom: 1;
         background: #3c3836;
     }
-    #sp-select-label, #sp-label {
+    #sp-select-label {
         color: #ebdbb2;
         width: 100%;
+        margin-bottom: 0;
+        background: #3c3836;
+    }
+    #sp-label {
+        color: #ebdbb2;
+        width: 100%;
+        margin-top: 1;
         margin-bottom: 0;
         background: #3c3836;
     }
