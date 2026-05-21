@@ -64,6 +64,7 @@
     "XTC_PROBABILITY": "0.5",
     "XTC_THRESHOLD": "0.1",
     "THEME": "Dracula",
+    "EXTRA_FLAGS": "",
     "DISABLED_FIELDS": [
         "DRY_MULTIPLIER",
         "DRY_BASE",

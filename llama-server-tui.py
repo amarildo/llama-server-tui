@@ -81,6 +81,7 @@ DEFAULT_CONFIG = {
     "DRY_PENALTY_LAST_N": "-1",
     "XTC_PROBABILITY": "0.5",
     "XTC_THRESHOLD": "0.1",
+    "EXTRA_FLAGS": "",
 }
 
 PARAM_HELP = {
@@ -148,6 +149,7 @@ PARAM_HELP = {
     "DRY_PENALTY_LAST_N": "Apply DRY penalty to the last N tokens only. -1 applies to the entire context.",
     "XTC_PROBABILITY": "XTC sampler probability. 0.5 balances vocabulary diversity and logical consistency perfectly.",
     "XTC_THRESHOLD": "XTC sampler minimum probability threshold. 0.1 excludes standard obvious choices.",
+    "EXTRA_FLAGS": "Any additional custom command-line arguments to pass directly to llama-server (e.g. --verbose --grp-attn-n 4).",
 }
 
 SELECT_OPTIONS = {
@@ -822,6 +824,9 @@ class LlamaConfigApp(App):
                 ("TEMPLATE_KWARGS", "Template Kwargs:"),
                 ("SKIP_CHAT_PARSING", "Skip Chat Parse:"),
             ]),
+            ("Custom Parameters", [
+                ("EXTRA_FLAGS", "Other Parameters:"),
+            ]),
         ]
 
         with VerticalScroll(id="main-scroll"):
@@ -829,7 +834,7 @@ class LlamaConfigApp(App):
                 with Collapsible(title=title, collapsed=False):
                     with Container(classes="grid-container"):
                         for key, label in fields:
-                            is_mandatory = key in ("BIN", "MODEL", "HOST", "PORT")
+                            is_mandatory = key in ("BIN", "MODEL", "HOST", "PORT", "EXTRA_FLAGS")
                             is_enabled = self.enabled_fields.get(key, True)
                             yield ParameterField(
                                 key=key, 
@@ -1028,6 +1033,8 @@ if __name__ == "__main__":
                         cmd.append("--cache-prompt")
                     else:
                         cmd.append("--no-cache-prompt")
+                elif key == "EXTRA_FLAGS" and value.strip():
+                    cmd.extend(shlex.split(value.strip()))
         
         print(f"Executing: {' '.join(shlex.quote(arg) for arg in cmd)}")
         print("-" * 60)
