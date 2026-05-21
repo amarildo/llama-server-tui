@@ -423,7 +423,7 @@ class SaveProfileModal(ModalScreen[str]):
     #save-profile-container {
         width: 55;
         height: 19;
-        background: #3c3836;
+        background: #282828;
         border: thick #fabd2f;
         padding: 1 2;
         align: center middle;
@@ -434,20 +434,20 @@ class SaveProfileModal(ModalScreen[str]):
         text-align: center;
         width: 100%;
         margin-bottom: 1;
-        background: #3c3836;
+        background: #282828;
     }
     #sp-select-label {
         color: #ebdbb2;
         width: 100%;
         margin-bottom: 0;
-        background: #3c3836;
+        background: #282828;
     }
     #sp-label {
         color: #ebdbb2;
         width: 100%;
         margin-top: 1;
         margin-bottom: 0;
-        background: #3c3836;
+        background: #282828;
     }
     #sp-select {
         width: 100%;
@@ -457,7 +457,7 @@ class SaveProfileModal(ModalScreen[str]):
         margin-bottom: 1;
     }
     #sp-select SelectCurrent {
-        background: #504945;
+        background: #3c3836;
         color: #ebdbb2;
         border: none;
         height: 1;
@@ -465,18 +465,22 @@ class SaveProfileModal(ModalScreen[str]):
     }
     #sp-input {
         width: 100%;
-        background: #504945;
+        background: #3c3836;
         border: none;
         color: #ebdbb2;
         padding: 0 1;
         height: 1;
         margin-bottom: 1;
     }
+    #sp-input:focus {
+        background: #fabd2f;
+        color: #282828;
+    }
     #sp-buttons {
         align: center middle;
         height: auto;
         margin-top: 1;
-        background: #3c3836;
+        background: #282828;
     }
     #sp-buttons Button {
         margin: 0 1;
