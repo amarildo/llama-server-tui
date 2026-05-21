@@ -1,13 +1,13 @@
 # 🦙 LLamaLauncherTui
 
-> A Premium, Zero-Dependency Textual User Interface (TUI) Launcher for `llama-server`.
+> A keyboard-driven Textual User Interface (TUI) launcher for `llama-server`.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python: 3.8+](https://img.shields.io/badge/Python-3.8%2B-blue.svg)](https://www.python.org/)
 [![UI: Textual](https://img.shields.io/badge/UI-Textual-orange.svg)](https://github.com/Textualize/textual)
 [![Hardware: NVIDIA RTX 4090 Optimized](https://img.shields.io/badge/RTX%204090-Optimized-green.svg)](#)
 
-LLamaLauncherTui is a sleek, modern, keyboard-driven terminal dashboard designed to simplify launching and managing `llama-server` configurations. Built from the ground up for high-performance deployments (specifically calibrated for the **NVIDIA RTX 4090 (24GB VRAM)** running **Qwen 3.6 (27B) UD-Q4_K_XL**), it consolidates over 60 hardware, context, cache, HTTP, and sampler flags into an beautiful, organized interface.
+LLamaLauncherTui is a keyboard-driven terminal interface designed to simplify launching and managing `llama-server` configurations. Calibrated with default settings for the **NVIDIA RTX 4090 (24GB VRAM)** running **Qwen 3.6 (27B) UD-Q4_K_XL**, it allows configuring hardware, context, cache, HTTP, and sampler options in a single consolidated interface.
 
 ```
   ╦  ╦  ╔═╗ ╔╦╗ ╔═╗   ╦  ╔═╗ ╦ ╦ ╔╗╔ ╔═╗ ╦ ╦ ╔═╗ ╦═╗
@@ -19,7 +19,7 @@ LLamaLauncherTui is a sleek, modern, keyboard-driven terminal dashboard designed
 
 ## ✨ Features
 
-* 🎨 **Signature Gruvbox Styling:** A stunning, premium retro dark dashboard designed with harmonized HSL color tokens. fully compatible with other premium terminal themes (such as Dracula).
+* 🎨 **Gruvbox Styling:** A dark theme interface styled with custom HSL color tokens, compatible with other terminal themes (such as Dracula).
 * ⚙️ **Speculative Decoding (MTP) Support:** Full, native configuration parameters for Qwen 3.6 Multi-Token Prediction (MTP) draft-heads, allowing you to fine-tune `spec-draft-n-max` and probabilities.
 * 💾 **Smart Prefix Cache Re-use:** Configurable dynamic prefix prompt caching (`--cache-prompt`) and re-use token bounds (`--cache-reuse`), boosting multi-turn agent chat throughput by up to 22%.
 * 🧠 **RTX 4090 Hardware Presets:** Pre-calibrated advanced VRAM configuration keys, including `MERGE_QKV`, `MERGE_EXPERTS` (expert matrix merging to conserve VRAM), and smart context checkpoints for massive (>100K) sequences.
