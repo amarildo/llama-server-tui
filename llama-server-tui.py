@@ -680,6 +680,9 @@ class AlertModal(ModalScreen[None]):
         self.dismiss()
 
 
+# NotificationModal replaced with elegant inline notification banner
+
+
 class LlamaConfigApp(App):
     TITLE = "Llama Launcher"
 
@@ -710,6 +713,22 @@ class LlamaConfigApp(App):
         color: #fabd2f;
         text-align: center;
         padding: 1 0;
+    }
+    #notification-banner {
+        dock: top;
+        width: 100%;
+        height: 1;
+        background: #3c3836;
+        color: #fabd2f;
+        text-align: center;
+        text-style: bold;
+        display: none;
+    }
+    #notification-banner.success {
+        color: #b8bb26;
+    }
+    #notification-banner.error {
+        color: #fb4934;
     }
     #main-scroll {
         padding: 1 2;
@@ -957,8 +976,35 @@ class LlamaConfigApp(App):
             variables[key] = bg
         return variables
 
+    def show_notification(self, message: str, severity: str = "success") -> None:
+        try:
+            banner = self.query_one("#notification-banner", Static)
+            banner.update(message)
+            banner.remove_class("success", "error")
+            banner.add_class(severity)
+            banner.styles.display = "block"
+            
+            if hasattr(self, "_notif_timer") and self._notif_timer:
+                try:
+                    self._notif_timer.stop()
+                except Exception:
+                    pass
+            
+            self._notif_timer = self.set_timer(2.0, self.hide_notification)
+        except Exception:
+            pass
+
+    def hide_notification(self) -> None:
+        try:
+            banner = self.query_one("#notification-banner", Static)
+            banner.styles.display = "none"
+            self._notif_timer = None
+        except Exception:
+            pass
+
     def compose(self) -> ComposeResult:
         yield Static(ASCII_HEADER, id="ascii-header")
+        yield Static("", id="notification-banner")
         
         sections = [
             ("Infrastructure", [
@@ -1136,15 +1182,15 @@ class LlamaConfigApp(App):
                     self.load_profile_data(data)
                     self.active_profile = profile_name
                     self.save_config()  # Dual-saves to update ACTIVE_PROFILE in config.json
-                    self.notify(f"Profile '{profile_name}' loaded successfully", severity="information", timeout=2.0)
+                    self.show_notification(f"✨ Profile '{profile_name}' loaded successfully! ✨", severity="success")
                 except Exception as e:
-                    self.notify(f"Error loading profile: {e}", severity="error", timeout=2.0)
+                    self.show_notification(f"⚠ Error loading profile: {e} ⚠", severity="error")
 
     def _on_profile_saved_as(self, profile_name: str) -> None:
         if profile_name:
             self.active_profile = profile_name
             self.save_config()  # Dual-saves to both config.json and the new profile
-            self.notify(f"Profile saved as '{profile_name}'", severity="information", timeout=2.0)
+            self.show_notification(f"✨ Profile saved as '{profile_name}'! ✨", severity="success")
 
     def load_profile_data(self, data: dict) -> None:
         self.config.update(data)
@@ -1192,10 +1238,7 @@ class LlamaConfigApp(App):
             with open(profile_path, "w") as f:
                 json.dump(self.config, f, indent=4)
         except Exception as e:
-            try:
-                self.notify(f"Failed to save profile file: {e}", severity="error", timeout=2.0)
-            except Exception:
-                pass
+            self.show_notification(f"⚠ Failed to save profile file: {e} ⚠", severity="error")
 
 
 
