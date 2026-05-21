@@ -358,6 +358,9 @@ class FileBrowserModal(ModalScreen[str]):
     #fb-buttons Button {
         margin: 0 1;
         min-width: 12;
+        height: 1;
+        min-height: 0;
+        border: none;
     }
     #btn-fb-cancel {
         background: #665c54;
@@ -521,6 +524,9 @@ class SaveProfileModal(ModalScreen[str]):
     #sp-buttons Button {
         margin: 0 1;
         min-width: 12;
+        height: 1;
+        min-height: 0;
+        border: none;
     }
     #btn-sp-cancel {
         background: #665c54;
@@ -632,6 +638,9 @@ class ConfirmDeleteModal(ModalScreen[bool]):
     #confirm-buttons Button {
         margin: 0 1;
         min-width: 12;
+        height: 1;
+        min-height: 0;
+        border: none;
     }
     #btn-confirm-yes {
         background: #fb4934;
@@ -721,6 +730,9 @@ class LoadProfileModal(ModalScreen[str]):
     #lp-buttons Button {
         margin: 0 1;
         min-width: 12;
+        height: 1;
+        min-height: 0;
+        border: none;
     }
     #btn-lp-cancel {
         background: #665c54;
@@ -824,6 +836,9 @@ class DeleteProfileModal(ModalScreen[None]):
     #dp-buttons Button {
         margin: 0 1;
         min-width: 12;
+        height: 1;
+        min-height: 0;
+        border: none;
     }
     #btn-dp-cancel {
         background: #665c54;
@@ -994,6 +1009,10 @@ class AlertModal(ModalScreen[None]):
         text-style: bold;
         min-width: 12;
         align: center middle;
+        height: 1;
+        min-height: 0;
+        border: none;
+        margin: 0;
     }
     #btn-alert-ok:hover {
         background: #fe8019;
