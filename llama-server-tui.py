@@ -939,7 +939,7 @@ class LlamaConfigApp(App):
         text-style: bold;
     }
     ParameterField .custom-checkbox {
-        background: #1d2021;
+        background: #282828;
         color: #b8bb26;
         text-style: bold;
         width: 3;
@@ -1010,7 +1010,7 @@ class LlamaConfigApp(App):
         grid-columns: 1fr 1fr;
         grid-rows: auto;
         grid-gutter: 1 6;
-        background: #1d2021;
+        background: #282828;
     }
     ParameterField {
         layout: horizontal;
@@ -1055,7 +1055,7 @@ class LlamaConfigApp(App):
         margin-right: 2;
         margin-bottom: 1;
         background: #282828;
-        border: solid #3c3836;
+        border: none;
         padding: 0 1;
     }
     Collapsible, CollapsibleTitle, Contents {
@@ -1076,7 +1076,7 @@ class LlamaConfigApp(App):
         text-style: bold;
     }
     Contents {
-        padding: 0;
+        padding: 0 0 1 0;
         margin: 0;
         height: auto;
         background: #282828;

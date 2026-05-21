@@ -1,0 +1,2494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Llama Launcher TUI - Interactive Retro Dashboard</title>
+    <!-- Premium Google Font for high-fidelity code aesthetics -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+    <meta name="description" content="An interactive, high-fidelity Gruvbox dark retro web dashboard for generating and testing llama-server parameters.">
+    <style>
+        /* Modernized Gruvbox Dark Hard Palette (Colors Design Theory) */
+        :root {
+            --bg-hard: #1d2021;      /* Deep hard canvas background */
+            --bg-std: #282828;       /* Medium card elevated backgrounds */
+            --bg-well: #3c3836;      /* Inset input well containers */
+            --bg-select: #504945;    /* Button inactive / Selection state */
+            --fg-cream: #ebdbb2;     /* Harmonious default foreground */
+            --fg-bright: #fbf1c7;    /* Ultra-high contrast titles */
+            --gold: #fabd2f;         /* Accent gold warnings / Headers */
+            --gold-dim: #d79921;     /* Darker gold accents */
+            --orange: #d65d0e;       /* Primary action buttons */
+            --orange-bright: #fe8019;/* Hot hover actions */
+            --green: #b8bb26;        /* Checkbox Active / Success status */
+            --green-dim: #98971a;    /* Muted green status */
+            --aqua: #8ec07c;         /* Navigation, file explorer, active icons */
+            --aqua-dim: #689d6a;     /* Muted secondary accents */
+            --red: #fb4934;          /* Inactive checkboxes / Cancel buttons */
+            --blue: #458588;         /* Load profile / Neutral tags */
+            --blue-bright: #83a598;  /* Glowing blue tags */
+            --gray: #a89984;         /* Muted annotations / Tooltip markers */
+            --font-mono: 'JetBrains Mono', monospace;
+            --font-sans: 'Outfit', sans-serif;
+            --shadow-premium: 0 8px 30px rgba(0,0,0,0.55);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Scrollbar styles for a vintage terminals feel */
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--bg-hard);
+            border-left: 1px solid var(--bg-well);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--bg-select);
+            border: 2px solid var(--bg-hard);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--gray);
+        }
+
+        body {
+            font-family: var(--font-sans);
+            background-color: var(--bg-hard);
+            color: var(--fg-cream);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            font-size: 14px;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* CRT Scanline & Phosphor Flicker effect overlays */
+        body::after {
+            content: " ";
+            display: block;
+            position: fixed;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 99999;
+            background-size: 100% 3px, 6px 100%;
+            pointer-events: none;
+            opacity: 0.45;
+        }
+
+        /* Top Retro Banner */
+        header {
+            background-color: var(--bg-hard);
+            border-bottom: 2px solid var(--bg-well);
+            padding: 12px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+            z-index: 10;
+        }
+
+        .header-brand {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .header-logo {
+            font-family: var(--font-mono);
+            font-weight: 800;
+            color: var(--gold);
+            font-size: 18px;
+            letter-spacing: -0.5px;
+            text-shadow: 0 0 8px rgba(250, 189, 47, 0.35);
+        }
+
+        .header-logo span {
+            color: var(--orange-bright);
+        }
+
+        .header-tagline {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            color: var(--gray);
+            border-left: 2px solid var(--bg-well);
+            padding-left: 15px;
+        }
+
+        .header-stats {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            font-family: var(--font-mono);
+            font-size: 12px;
+        }
+
+        .stat-item {
+            background-color: var(--bg-std);
+            padding: 4px 10px;
+            border-radius: 4px;
+            border: 1px solid var(--bg-well);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .stat-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--green);
+            box-shadow: 0 0 8px var(--green);
+            animation: pulse-glow 2s infinite;
+        }
+
+        @keyframes pulse-glow {
+            0% { opacity: 0.4; }
+            50% { opacity: 1; }
+            100% { opacity: 0.4; }
+        }
+
+        /* Notification Toast Container */
+        #toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: none;
+            width: 320px;
+        }
+
+        .toast-banner {
+            background-color: var(--bg-std);
+            border: 2px solid var(--gold);
+            color: var(--fg-cream);
+            padding: 12px 16px;
+            border-radius: 6px;
+            font-family: var(--font-mono);
+            font-size: 13px;
+            font-weight: bold;
+            box-shadow: var(--shadow-premium);
+            transform: translateX(120%);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            pointer-events: auto;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .toast-banner.active {
+            transform: translateX(0);
+        }
+
+        .toast-banner.success {
+            border-color: var(--green);
+            color: var(--green);
+        }
+
+        .toast-banner.error {
+            border-color: var(--red);
+            color: var(--red);
+        }
+
+        /* Main Workspace split layout */
+        .workspace {
+            display: flex;
+            flex-grow: 1;
+            overflow: hidden;
+            width: 100%;
+        }
+
+        /* Left Side: Parameters Form Scrollable */
+        main {
+            flex: 1 1 65%;
+            overflow-y: auto;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        /* Accordion Collapsible Cards */
+        .card {
+            background-color: var(--bg-std);
+            border: none;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .card-header {
+            background-color: var(--bg-std);
+            color: var(--gold);
+            padding: 14px 20px;
+            font-weight: 700;
+            font-size: 15px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            user-select: none;
+            border-bottom: 1px solid transparent;
+            transition: background-color 0.15s;
+        }
+
+        .card-header:hover {
+            background-color: var(--bg-well);
+            color: var(--fg-bright);
+        }
+
+        .card.expanded .card-header {
+            border-bottom-color: var(--bg-well);
+        }
+
+        .card-chevron {
+            font-size: 11px;
+            transition: transform 0.2s ease-in-out;
+            color: var(--gray);
+        }
+
+        .card.expanded .card-chevron {
+            transform: rotate(90deg);
+            color: var(--gold);
+        }
+
+        .card-content {
+            padding: 20px 20px 10px 20px;
+            display: none;
+            flex-direction: column;
+            gap: 14px;
+            background-color: var(--bg-std);
+        }
+
+        .card.expanded .card-content {
+            display: flex;
+        }
+
+        /* Two column layout inside card fields */
+        .card-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+
+        @media (max-width: 900px) {
+            .card-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Custom Form Row layout */
+        .field-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 4px 0;
+            transition: opacity 0.2s, transform 0.2s;
+            position: relative;
+        }
+
+        .field-row.dimmed {
+            opacity: 0.35;
+        }
+
+        .chk-btn {
+            background-color: var(--bg-std);
+            color: var(--red);
+            font-family: var(--font-mono);
+            font-weight: 800;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            border-radius: 4px;
+            user-select: none;
+            border: 1px solid var(--bg-well);
+            transition: background-color 0.1s, color 0.1s, border-color 0.1s;
+            flex-shrink: 0;
+            font-size: 12px;
+        }
+
+        .chk-btn:hover {
+            background-color: var(--bg-well);
+            border-color: var(--gray);
+        }
+
+        .chk-btn.checked {
+            color: var(--green);
+            border-color: var(--green-dim);
+            text-shadow: 0 0 6px rgba(184, 187, 38, 0.45);
+        }
+
+        .chk-spacer {
+            width: 32px;
+            height: 32px;
+            flex-shrink: 0;
+        }
+
+        .field-label {
+            width: 170px;
+            font-weight: 600;
+            color: var(--fg-cream);
+            font-size: 13.5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            cursor: help;
+        }
+
+        .field-row.dimmed .field-label {
+            color: var(--gray);
+            text-decoration: line-through;
+        }
+
+        .field-row.mandatory .field-label::after {
+            content: " *";
+            color: var(--gold);
+        }
+
+        /* Help Question Icon styling */
+        .help-trigger {
+            color: var(--gray);
+            font-family: var(--font-mono);
+            font-size: 13px;
+            cursor: help;
+            user-select: none;
+            width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: color 0.15s, background-color 0.15s;
+            flex-shrink: 0;
+        }
+
+        .help-trigger:hover {
+            color: var(--bg-hard);
+            background-color: var(--gray);
+        }
+
+        /* Inset Well Inputs */
+        .field-container {
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+            position: relative;
+        }
+
+        input[type="text"], select {
+            width: 100%;
+            background-color: var(--bg-well);
+            color: var(--fg-cream);
+            border: 1px solid var(--bg-select);
+            outline: none;
+            padding: 0 12px;
+            font-family: var(--font-mono);
+            font-size: 13px;
+            height: 34px;
+            border-radius: 4px;
+            transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+        }
+
+        input[type="text"]:focus, select:focus {
+            background-color: var(--gold);
+            color: var(--bg-hard);
+            font-weight: 700;
+            border-color: var(--fg-bright);
+        }
+
+        input[type="text"]:disabled, select:disabled {
+            background-color: var(--bg-hard);
+            color: var(--gray);
+            cursor: not-allowed;
+            border-color: var(--bg-well);
+        }
+
+        /* Folder browser trigger button */
+        .btn-browse {
+            position: absolute;
+            right: 4px;
+            background-color: var(--bg-select);
+            border: none;
+            color: var(--aqua);
+            height: 26px;
+            width: 28px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            border-radius: 3px;
+            font-size: 13px;
+            transition: background-color 0.1s, color 0.1s;
+        }
+
+        .btn-browse:hover:not(:disabled) {
+            background-color: var(--aqua);
+            color: var(--bg-hard);
+        }
+
+        .btn-browse:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+        }
+
+        /* Help Info block below field row when clicked or hovered */
+        .field-tooltip {
+            position: absolute;
+            bottom: 110%;
+            left: 50px;
+            background-color: var(--bg-hard);
+            border: 1px solid var(--gray);
+            color: var(--fg-cream);
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-family: var(--font-mono);
+            font-size: 11.5px;
+            width: 280px;
+            z-index: 1000;
+            box-shadow: var(--shadow-premium);
+            display: none;
+            pointer-events: none;
+            line-height: 1.4;
+        }
+
+        .field-row:hover .field-tooltip {
+            /* Enable fast native mouse hovers */
+            /* display: block; */
+        }
+
+        /* Right Side: Sidebar Panel */
+        aside {
+            flex: 0 0 35%;
+            background-color: var(--bg-std);
+            border-left: 2px solid var(--bg-well);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Session State Display */
+        .session-info {
+            padding: 20px;
+            border-bottom: 2px solid var(--bg-hard);
+            background-color: rgba(29, 32, 33, 0.3);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .session-title {
+            font-family: var(--font-mono);
+            color: var(--gold);
+            font-weight: 700;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .profile-tag {
+            background-color: var(--blue);
+            color: var(--fg-bright);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .profile-tag.dirty {
+            background-color: var(--orange);
+        }
+
+        .dashboard-meters {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            font-family: var(--font-mono);
+            font-size: 11px;
+        }
+
+        .meter-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .meter-bar {
+            height: 6px;
+            background-color: var(--bg-well);
+            border-radius: 3px;
+            flex-grow: 1;
+            margin: 0 10px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .meter-fill {
+            height: 100%;
+            background-color: var(--aqua);
+            border-radius: 3px;
+            transition: width 0.4s ease;
+        }
+
+        .meter-fill.warn {
+            background-color: var(--gold);
+        }
+
+        .meter-fill.crit {
+            background-color: var(--red);
+        }
+
+        /* Shell Command output well */
+        .cli-preview-container {
+            flex-grow: 1;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            overflow: hidden;
+        }
+
+        .cli-title-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-family: var(--font-mono);
+            font-size: 12px;
+            color: var(--gray);
+        }
+
+        .cli-terminal {
+            background-color: var(--bg-hard);
+            border: 1px solid var(--bg-well);
+            border-radius: 6px;
+            padding: 16px;
+            font-family: var(--font-mono);
+            font-size: 12px;
+            color: var(--fg-bright);
+            overflow-y: auto;
+            flex-grow: 1;
+            white-space: pre-wrap;
+            word-break: break-all;
+            line-height: 1.5;
+            position: relative;
+        }
+
+        /* Copied effect overlay */
+        .btn-copy {
+            background-color: var(--bg-select);
+            border: none;
+            color: var(--fg-cream);
+            font-family: var(--font-sans);
+            font-size: 12px;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.15s, color 0.15s;
+        }
+
+        .btn-copy:hover {
+            background-color: var(--gray);
+            color: var(--bg-hard);
+        }
+
+        .btn-copy.flashed {
+            background-color: var(--green);
+            color: var(--bg-hard);
+        }
+
+        /* Launcher Control Drawer */
+        .control-drawer {
+            padding: 20px;
+            background-color: rgba(29, 32, 33, 0.45);
+            border-top: 1px solid var(--bg-well);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .control-row {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn-action {
+            flex: 1;
+            height: 42px;
+            font-family: var(--font-sans);
+            font-size: 14px;
+            font-weight: 700;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            outline: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: background-color 0.15s, transform 0.1s, box-shadow 0.15s;
+        }
+
+        .btn-action:active {
+            transform: scale(0.98);
+        }
+
+        .btn-load-preset {
+            background-color: var(--blue);
+            color: var(--fg-bright);
+        }
+
+        .btn-load-preset:hover {
+            background-color: var(--blue-bright);
+            color: var(--bg-hard);
+        }
+
+        .btn-save-preset {
+            background-color: var(--orange);
+            color: var(--fg-bright);
+        }
+
+        .btn-save-preset:hover {
+            background-color: var(--orange-bright);
+            color: var(--bg-hard);
+        }
+
+        .btn-launch-server {
+            background-color: var(--green);
+            color: var(--bg-hard);
+            box-shadow: 0 4px 15px rgba(184, 187, 38, 0.2);
+        }
+
+        .btn-launch-server:hover {
+            background-color: var(--aqua);
+            color: var(--bg-hard);
+            box-shadow: 0 6px 20px rgba(142, 192, 124, 0.35);
+        }
+
+        /* Generic Modal Dialog overlays */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            backdrop-filter: blur(3px);
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-window {
+            background-color: var(--bg-std);
+            border: 2px solid var(--gold);
+            border-radius: 8px;
+            padding: 24px;
+            width: 500px;
+            max-width: 90%;
+            box-shadow: var(--shadow-premium);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            position: relative;
+        }
+
+        .modal-window.danger-window {
+            border-color: var(--red);
+        }
+
+        .modal-header-title {
+            font-family: var(--font-mono);
+            font-size: 16px;
+            font-weight: bold;
+            color: var(--gold);
+            border-bottom: 1px solid var(--bg-well);
+            padding-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .modal-window.danger-window .modal-header-title {
+            color: var(--red);
+        }
+
+        .modal-body {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .modal-desc {
+            font-size: 13px;
+            color: var(--fg-cream);
+            line-height: 1.4;
+        }
+
+        .modal-field {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .modal-label {
+            font-weight: bold;
+            font-size: 12px;
+            color: var(--gray);
+            text-transform: uppercase;
+        }
+
+        .modal-input-well {
+            background-color: var(--bg-well);
+            color: var(--fg-cream);
+            border: 1px solid var(--bg-select);
+            border-radius: 4px;
+            height: 38px;
+            padding: 0 12px;
+            font-family: var(--font-mono);
+            font-size: 13px;
+            outline: none;
+            width: 100%;
+        }
+
+        .modal-input-well:focus {
+            border-color: var(--gold);
+        }
+
+        .modal-select-well {
+            background-color: var(--bg-well);
+            color: var(--fg-cream);
+            border: 1px solid var(--bg-select);
+            border-radius: 4px;
+            height: 38px;
+            padding: 0 12px;
+            font-family: var(--font-mono);
+            font-size: 13px;
+            outline: none;
+            width: 100%;
+        }
+
+        .modal-buttons-row {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 10px;
+        }
+
+        .modal-btn {
+            height: 36px;
+            padding: 0 20px;
+            font-family: var(--font-sans);
+            font-weight: bold;
+            font-size: 13px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.15s;
+        }
+
+        .modal-btn-cancel {
+            background-color: var(--bg-select);
+            color: var(--fg-cream);
+        }
+
+        .modal-btn-cancel:hover {
+            background-color: var(--gray);
+            color: var(--bg-hard);
+        }
+
+        .modal-btn-confirm {
+            background-color: var(--gold);
+            color: var(--bg-hard);
+        }
+
+        .modal-btn-confirm:hover {
+            background-color: var(--orange-bright);
+            color: var(--bg-hard);
+        }
+
+        .modal-btn-danger {
+            background-color: var(--red);
+            color: var(--fg-bright);
+        }
+
+        .modal-btn-danger:hover {
+            background-color: var(--orange-bright);
+            color: var(--bg-hard);
+        }
+
+        /* Profile Selection grid in Load Modal */
+        .profile-list-well {
+            background-color: var(--bg-hard);
+            border: 1px solid var(--bg-well);
+            border-radius: 6px;
+            height: 200px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            padding: 6px;
+        }
+
+        .profile-list-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: var(--font-mono);
+            transition: background-color 0.1s;
+        }
+
+        .profile-list-row:hover {
+            background-color: var(--bg-well);
+        }
+
+        .profile-list-name {
+            color: var(--fg-cream);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .profile-list-row:hover .profile-list-name {
+            color: var(--gold);
+            font-weight: bold;
+        }
+
+        .profile-list-row.active-profile {
+            background-color: rgba(69, 133, 136, 0.2);
+            border: 1px dashed var(--blue);
+        }
+
+        .profile-list-row.active-profile .profile-list-name {
+            color: var(--blue-bright);
+            font-weight: bold;
+        }
+
+        .btn-trash {
+            background: transparent;
+            color: var(--gray);
+            border: none;
+            width: 26px;
+            height: 26px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 13px;
+            transition: background-color 0.1s, color 0.1s;
+        }
+
+        .btn-trash:hover {
+            background-color: var(--red);
+            color: var(--bg-hard);
+        }
+
+        /* Simulated File Browser layout */
+        .file-browser-cwd {
+            background-color: var(--bg-hard);
+            border: 1px solid var(--bg-well);
+            padding: 6px 12px;
+            font-family: var(--font-mono);
+            font-size: 12px;
+            color: var(--aqua);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .file-list {
+            background-color: var(--bg-hard);
+            border: 1px solid var(--bg-well);
+            border-radius: 6px;
+            height: 220px;
+            overflow-y: auto;
+            padding: 6px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .file-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: var(--font-mono);
+            font-size: 12.5px;
+            transition: background-color 0.15s;
+        }
+
+        .file-row:hover {
+            background-color: var(--bg-well);
+        }
+
+        .file-row.dir {
+            color: var(--aqua);
+            font-weight: 600;
+        }
+
+        .file-row.file {
+            color: var(--fg-cream);
+        }
+
+        .file-row:hover.file {
+            color: var(--gold);
+        }
+
+        .file-icon {
+            font-size: 13px;
+        }
+
+        /* Simulated Running Terminal Overlay Screen */
+        .terminal-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background-color: var(--bg-hard);
+            display: none;
+            flex-direction: column;
+            z-index: 20000;
+            padding: 24px;
+            font-family: var(--font-mono);
+        }
+
+        .terminal-overlay.active {
+            display: flex;
+        }
+
+        .term-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--bg-well);
+            margin-bottom: 16px;
+        }
+
+        .term-title {
+            color: var(--green);
+            font-size: 15px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-shadow: 0 0 8px rgba(184,187,38,0.4);
+        }
+
+        .term-console {
+            background-color: #141617;
+            border: 2px solid var(--bg-well);
+            border-radius: 8px;
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+            color: #d5c4a1;
+            font-size: 13px;
+            line-height: 1.5;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.8);
+            position: relative;
+        }
+
+        .term-line {
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .term-line.cmd-echo {
+            color: var(--gold);
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .term-line.system {
+            color: var(--blue-bright);
+        }
+
+        .term-line.success {
+            color: var(--green);
+            font-weight: bold;
+        }
+
+        .term-line.error {
+            color: var(--red);
+            font-weight: bold;
+        }
+
+        .term-cursor {
+            display: inline-block;
+            width: 8px;
+            height: 15px;
+            background-color: var(--fg-cream);
+            margin-left: 4px;
+            animation: cursor-blink 1s infinite;
+            vertical-align: middle;
+        }
+
+        @keyframes cursor-blink {
+            0%, 49% { background-color: var(--fg-cream); }
+            50%, 100% { background-color: transparent; }
+        }
+
+        .term-footer {
+            margin-top: 16px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 15px;
+        }
+
+        .btn-term-stop {
+            background-color: var(--red);
+            color: var(--fg-bright);
+            font-family: var(--font-sans);
+            font-weight: bold;
+            font-size: 13px;
+            height: 38px;
+            padding: 0 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.15s;
+        }
+
+        .btn-term-stop:hover {
+            background-color: var(--orange-bright);
+            color: var(--bg-hard);
+        }
+
+        /* Help Info Panel container inside Sidebar */
+        .info-panel {
+            padding: 16px;
+            border-bottom: 2px solid var(--bg-hard);
+            background-color: rgba(29,32,33,0.15);
+            font-family: var(--font-mono);
+            font-size: 11px;
+            color: var(--gray);
+            line-height: 1.45;
+            display: none;
+        }
+
+        .info-panel.active {
+            display: block;
+        }
+
+        .info-panel-title {
+            color: var(--gold);
+            font-weight: bold;
+            font-size: 12px;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+        }
+
+        /* Tooltip Helper */
+        .tooltip-accent {
+            color: var(--gold);
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Retro Header Banner -->
+    <header>
+        <div class="header-brand">
+            <div class="header-logo">⭐ LLAMA-SERVER<span>.TUI</span></div>
+            <div class="header-tagline">Advanced Retro Configuration Engine v2.4</div>
+        </div>
+        <div class="header-stats">
+            <div class="stat-item">
+                <div class="stat-dot"></div>
+                <span>CUDA GPU Active</span>
+            </div>
+            <div class="stat-item" style="color: var(--aqua);">
+                <span>VRAM: RTX 4090 (24GB)</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Interactive Workspace Grid -->
+    <div class="workspace">
+        
+        <!-- Left Column: Settings Form -->
+        <main id="parameters-container">
+            <!-- Programmatic Accordion Cards injected here by JS -->
+        </main>
+
+        <!-- Right Column: Live Terminal Sidebar -->
+        <aside>
+            <!-- Session Stats -->
+            <div class="session-info">
+                <div class="session-title">
+                    <span>Config Management</span>
+                    <span class="profile-tag" id="profile-tag-element">⭐ qwen-speculative</span>
+                </div>
+                <div class="dashboard-meters">
+                    <div class="meter-row">
+                        <span>EST VRAM USAGE</span>
+                        <span id="vram-stat-text">16.4 GB / 24 GB (68%)</span>
+                    </div>
+                    <div class="meter-bar">
+                        <div class="meter-fill" id="vram-meter-bar" style="width: 68%;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dynamic Parameter description panel -->
+            <div class="info-panel" id="sidebar-info-panel">
+                <div class="info-panel-title" id="info-panel-title">Parameter Help</div>
+                <div id="info-panel-desc">Hover over or click a parameter well to see its command line argument syntax and documentation.</div>
+            </div>
+
+            <!-- CLI Command Live Terminal box -->
+            <div class="cli-preview-container">
+                <div class="cli-title-bar">
+                    <span>LIVE BASH COMMAND PREVIEW</span>
+                    <button class="btn-copy" id="btn-copy-command" onclick="copyCommandLine()">COPY CODE</button>
+                </div>
+                <div class="cli-terminal" id="cmd-preview-box">
+                    <!-- Updated dynamically in real-time -->
+                </div>
+            </div>
+
+            <!-- Launcher Actions Panel Drawer -->
+            <div class="control-drawer">
+                <div class="control-row">
+                    <button class="btn-action btn-load-preset" onclick="openLoadPresetModal()">
+                        📂 Load Profile
+                    </button>
+                    <button class="btn-action btn-save-preset" onclick="openSavePresetModal()">
+                        💾 Save As...
+                    </button>
+                </div>
+                <button class="btn-action btn-launch-server" onclick="startSimulatedServer()">
+                    🚀 Launch Server
+                </button>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Toast Notification Overlay Rack -->
+    <div id="toast-container"></div>
+
+    <!-- Modal Overlay Backdrop: Load Profile -->
+    <div class="modal-overlay" id="modal-load">
+        <div class="modal-window">
+            <div class="modal-header-title">📂 Load Profile Preset</div>
+            <div class="modal-body">
+                <div class="modal-desc">Choose a stored configuration profile. ⭐ indicates active selection. Default presets are read-only.</div>
+                <div class="profile-list-well" id="load-profiles-grid">
+                    <!-- Dynamic profile items -->
+                </div>
+            </div>
+            <div class="modal-buttons-row">
+                <button class="modal-btn modal-btn-cancel" onclick="closeModal('modal-load')">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Overlay Backdrop: Save Profile -->
+    <div class="modal-overlay" id="modal-save">
+        <div class="modal-window">
+            <div class="modal-header-title">💾 Save Profile Configuration</div>
+            <div class="modal-body">
+                <div class="modal-field">
+                    <div class="modal-label">Choose profile to overwrite:</div>
+                    <select class="modal-select-well" id="save-overwrite-select" onchange="onOverwriteSelectChanged()">
+                        <!-- Options generated dynamically -->
+                    </select>
+                </div>
+                <div class="modal-field" style="margin-top: 8px;">
+                    <div class="modal-label">Or enter new profile name:</div>
+                    <input type="text" class="modal-input-well" id="save-new-name-input" placeholder="e.g. speculative-turbo">
+                </div>
+                <div class="modal-desc" style="color: var(--gray); font-size: 11px;">Saving will preserve all parameter values and enabled states in local session memory.</div>
+            </div>
+            <div class="modal-buttons-row">
+                <button class="modal-btn modal-btn-cancel" onclick="closeModal('modal-save')">Cancel</button>
+                <button class="modal-btn modal-btn-confirm" onclick="confirmSaveProfile()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Overlay Backdrop: Confirm Delete -->
+    <div class="modal-overlay" id="modal-delete">
+        <div class="modal-window danger-window">
+            <div class="modal-header-title">⚠ Warning: Confirm Deletion</div>
+            <div class="modal-body">
+                <div class="modal-desc" id="delete-warning-text">Are you sure you want to delete profile preset? This action cannot be undone.</div>
+            </div>
+            <div class="modal-buttons-row">
+                <button class="modal-btn modal-btn-cancel" onclick="closeModal('modal-delete')">Cancel</button>
+                <button class="modal-btn modal-btn-danger" onclick="confirmDeleteProfile()">Yes, Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Overlay Backdrop: File Browser -->
+    <div class="modal-overlay" id="modal-browse">
+        <div class="modal-window" style="width: 550px;">
+            <div class="modal-header-title">📂 Browse Local Filesystem</div>
+            <div class="modal-body">
+                <div class="file-browser-cwd">
+                    <span>Directory:</span>
+                    <span id="fb-cwd-path">/home/peter/models</span>
+                </div>
+                <div class="file-list" id="fb-files-grid">
+                    <!-- Directory rows generated dynamically -->
+                </div>
+            </div>
+            <div class="modal-buttons-row">
+                <button class="modal-btn modal-btn-cancel" onclick="closeModal('modal-browse')">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Running Terminal Simulator fullscreen overlay screen -->
+    <div class="terminal-overlay" id="terminal-screen">
+        <div class="term-header">
+            <div class="term-title">🚀 RUNNING LLAMA-SERVER SUBSYSTEM ACTIVE</div>
+            <button class="btn-term-stop" onclick="stopSimulatedServer()">Terminate Process</button>
+        </div>
+        <div class="term-console" id="term-console-buffer">
+            <!-- Simulated stdout logs -->
+        </div>
+        <div class="term-footer">
+            <span style="color: var(--gray); font-size: 11px;">Listening at: http://10.0.0.2:8000 | CLI Terminated PID 284902</span>
+        </div>
+    </div>
+
+    <!-- Interactive Javascript Logic -->
+    <script>
+        // Full parameter schema directly mapping the Python TUI
+        const SECTIONS = [
+            {
+                title: "Infrastructure",
+                icon: "🌐",
+                fields: [
+                    { key: "BIN", label: "Server Binary", type: "file", mandatory: true },
+                    { key: "MODEL", label: "Model Path", type: "file", mandatory: true },
+                    { key: "HOST", label: "Host IP Address", type: "text", mandatory: true },
+                    { key: "PORT", label: "Port", type: "text", mandatory: true },
+                    { key: "API_KEY", label: "API Key", type: "text" },
+                    { key: "ALIAS", label: "Model Alias", type: "text" },
+                    { key: "WEBUI", label: "Web UI Support", type: "select", options: ["auto", "on", "off"] }
+                ]
+            },
+            {
+                title: "Hardware & Performance",
+                icon: "⚡",
+                fields: [
+                    { key: "NGL", label: "GPU Offload Layers (-ngl)", type: "text" },
+                    { key: "CTX", label: "Context Size (-c)", type: "text" },
+                    { key: "NP", label: "Parallel Request Slots (-np)", type: "text" },
+                    { key: "THREADS", label: "CPU Generation Threads (-t)", type: "text" },
+                    { key: "THREADS_BATCH", label: "Batch Threads (-tb)", type: "text" },
+                    { key: "BATCH_SIZE", label: "Batch Size (-b)", type: "text" },
+                    { key: "UBATCH_SIZE", label: "Micro Batch Size (-ub)", type: "text" },
+                    { key: "FLASH_ATTN", label: "Flash Attention", type: "select", options: ["on", "off", "auto"] },
+                    { key: "CACHE_K", label: "KV Cache K Quantization", type: "select", options: ["q8_0", "f16", "q4_0"] },
+                    { key: "CACHE_V", label: "KV Cache V Quantization", type: "select", options: ["q8_0", "f16", "q4_0"] },
+                    { key: "MLOCK", label: "MLock Memory Lock", type: "select", options: ["off", "on"] },
+                    { key: "SPLIT_MODE", label: "Split Multi-GPU Mode (-sm)", type: "select", options: ["none", "row", "layer"] },
+                    { key: "MAIN_GPU", label: "Main GPU Index (-mg)", type: "text" },
+                    { key: "TENSOR_SPLIT", label: "Tensor Split Ratio (-ts)", type: "text" },
+                    { key: "NUMA", label: "NUMA Node Tuning", type: "select", options: ["none", "distribute", "isolate", "numactl"] }
+                ]
+            },
+            {
+                title: "Context & Cache",
+                icon: "💾",
+                fields: [
+                    { key: "CTX_CHECKPOINTS", label: "Context Checkpoints", type: "text" },
+                    { key: "CACHE_RAM", label: "Cache Memory Buffer MB", type: "text" },
+                    { key: "CONT_BATCHING", label: "Continuous Batching", type: "select", options: ["on", "off"] },
+                    { key: "CACHE_PROMPT", label: "Prompt Caching", type: "select", options: ["on", "off"] },
+                    { key: "CACHE_REUSE", label: "Cache Reuse Min Tokens", type: "text" },
+                    { key: "NO_MMAP", label: "Disable MMAP Weighing", type: "select", options: ["off", "on"] }
+                ]
+            },
+            {
+                title: "HTTP Server Configuration",
+                icon: "📡",
+                fields: [
+                    { key: "TIMEOUT", label: "Server Timeout (sec)", type: "text" },
+                    { key: "THREADS_HTTP", label: "HTTP Listener Threads", type: "text" }
+                ]
+            },
+            {
+                title: "Sampling Controls",
+                icon: "🎲",
+                fields: [
+                    { key: "TEMP", label: "Temperature", type: "text" },
+                    { key: "TOP_P", label: "Top-P Sampling", type: "text" },
+                    { key: "TOP_K", label: "Top-K Sampling", type: "text" },
+                    { key: "MIN_P", label: "Min-P Threshold", type: "text" },
+                    { key: "PRESENCE_PENALTY", label: "Presence Penalty", type: "text" },
+                    { key: "REPEAT_PENALTY", label: "Repeat Penalty", type: "text" },
+                    { key: "PREDICT", label: "Generation Max Tokens (-n)", type: "text" },
+                    { key: "SEED", label: "RNG Seed", type: "text" }
+                ]
+            },
+            {
+                title: "Advanced Samplers",
+                icon: "⚙",
+                fields: [
+                    { key: "DRY_MULTIPLIER", label: "DRY Sampler Multiplier", type: "text" },
+                    { key: "DRY_BASE", label: "DRY Base Penalty", type: "text" },
+                    { key: "DRY_ALLOWED_LENGTH", label: "DRY Allowed Sequence", type: "text" },
+                    { key: "DRY_PENALTY_LAST_N", label: "DRY History Limit N", type: "text" },
+                    { key: "XTC_PROBABILITY", label: "XTC Sampler Probability", type: "text" },
+                    { key: "XTC_THRESHOLD", label: "XTC Threshold Level", type: "text" }
+                ]
+            },
+            {
+                title: "Speculative Decoding (MTP)",
+                icon: "🤝",
+                fields: [
+                    { key: "SPEC_TYPE", label: "Speculator Mode Type", type: "select", options: ["draft-mtp", "draft", "none"] },
+                    { key: "SPEC_MAX", label: "Speculative Max Draft (-md)", type: "text" },
+                    { key: "SPEC_MIN", label: "Speculative Min Prob", type: "text" },
+                    { key: "SPEC_DRAFT_N_MIN", label: "Spec Min Draft Count", type: "text" },
+                    { key: "DRAFT_MAX", label: "Draft Steps Limit", type: "text" },
+                    { key: "DRAFT_P_MIN", label: "Draft Probability Min", type: "text" }
+                ]
+            },
+            {
+                title: "Reasoning & Agentic (Qwen3.6)",
+                icon: "🧠",
+                fields: [
+                    { key: "REASONING", label: "Thinking Mode", type: "select", options: ["auto", "on", "off"] },
+                    { key: "REASONING_FORMAT", label: "Thinking XML format", type: "select", options: ["auto", "deepseek", "none"] },
+                    { key: "REASONING_BUDGET", label: "Thinking token budget", type: "text" },
+                    { key: "TOOLS", label: "Agentic Tools Enable", type: "select", options: ["all", "none"] }
+                ]
+            },
+            {
+                title: "Features & Monitoring",
+                icon: "📈",
+                fields: [
+                    { key: "JINJA", label: "Jinja Chat Templates", type: "select", options: ["on", "off"] },
+                    { key: "METRICS", label: "Prometheus Metrics", type: "select", options: ["off", "on"] }
+                ]
+            },
+            {
+                title: "Multimodal & Templates",
+                icon: "👁",
+                fields: [
+                    { key: "MMPROJ", label: "Vision Projector Path", type: "file" },
+                    { key: "MMPROJ_OFFLOAD", label: "Vision Projector Offload", type: "select", options: ["on", "off"] },
+                    { key: "IMAGE_MIN_TOKENS", label: "Image Min Tokens", type: "text" },
+                    { key: "IMAGE_MAX_TOKENS", label: "Image Max Tokens", type: "text" },
+                    { key: "CHAT_TEMPLATE", label: "Chat Template Name", type: "text" },
+                    { key: "CHAT_TEMPLATE_FILE", label: "Jinja File Path", type: "file" },
+                    { key: "TEMPLATE_KWARGS", label: "Template JSON kwargs", type: "text" },
+                    { key: "SKIP_CHAT_PARSING", label: "Skip System chat parses", type: "select", options: ["off", "on"] }
+                ]
+            },
+            {
+                title: "Custom Flags / Parameters",
+                icon: "🛠",
+                fields: [
+                    { key: "EXTRA_FLAGS", label: "Other Parameters", type: "text", mandatory: true }
+                ]
+            }
+        ];
+
+        // Explanations for all parameters used for tooltips/info boxes
+        const PARAM_HELP = {
+            "BIN": "Path to the compiled llama-server executable binary file.",
+            "MODEL": "Absolute system path to the primary GGUF model file on disk.",
+            "HOST": "IP address standard binding. Use 0.0.0.0 to broadcast to your entire local network.",
+            "PORT": "Network port for the local HTTP JSON api server. Defaults to 8000.",
+            "API_KEY": "Authentication token for API requests. Comma-separated list for multi-user scopes.",
+            "ALIAS": "Custom virtual model name returned in API responses (/v1/models query).",
+            "WEBUI": "Serves the built-in llama.cpp web administration interface (auto/on/off).",
+            "NGL": "Number of layers offloaded to the RTX 4090 GPU. Specify 99 for complete CUDA offload.",
+            "CTX": "Active context token window size. Qwen3.6-27B handles up to 262,000 tokens natively.",
+            "NP": "Number of parallel request slots to allocate for simultaneous multi-user threads.",
+            "THREADS": "Number of physical CPU threads allocated for token generation cycles.",
+            "THREADS_BATCH": "CPU thread pool allocated for batch prefill calculations.",
+            "BATCH_SIZE": "Total logical batch size calculated during prefill prompt evaluations.",
+            "UBATCH_SIZE": "Physical batch size processed directly in CUDA hardware steps.",
+            "FLASH_ATTN": "Enables Flash Attention, dramatically reducing VRAM usage and speeding prefill cycles.",
+            "CACHE_K": "Quantization scaling for KV cache keys. q8_0 cuts key memory in half with no degradation.",
+            "CACHE_V": "Quantization scaling for KV cache values. q8_0 halves value VRAM consumption.",
+            "MLOCK": "Locks model memory in physical RAM, completely preventing slow OS HDD/SSD swapping.",
+            "SPLIT_MODE": "Determines tensor split logic across multi-GPU boards (none/row/layer).",
+            "MAIN_GPU": "Selects primary coordinating GPU index in multi-card rigs.",
+            "TENSOR_SPLIT": "Fractional distribution array of model split percentages across multi-GPUs.",
+            "NUMA": "Non-Uniform Memory Access architecture thread binding style for multi-CPU systems.",
+            "CTX_CHECKPOINTS": "Interim memory checkpoints saved during context expansion to salvage VRAM headroom.",
+            "CACHE_RAM": "Limits KV cache structures strictly to a designated GPU VRAM ceiling in megabytes.",
+            "CONT_BATCHING": "Interleave sequences of active API streams to process requests concurrently.",
+            "CACHE_PROMPT": "Caches prompts to bypass prefill delay on recurrent, long chat sessions.",
+            "CACHE_REUSE": "Minimum matching prompt tokens before context cache retrieval initiates.",
+            "NO_MMAP": "Loads entire weights file directly into RAM, avoiding lazy-loaded filesystem page faults.",
+            "TIMEOUT": "Duration in seconds before inactive client sessions are pruned.",
+            "THREADS_HTTP": "Worker pool allocated to manage incoming HTTP network sockets.",
+            "TEMP": "Sampling Temperature. Lower = highly structured/logical. Higher = creative/diverse.",
+            "TOP_P": "Nucleus sampling probability limit. Recommended: 0.95 for agentic flows.",
+            "TOP_K": "Reduces token search space strictly to top K options. Qwen3.6 optimal value: 20.",
+            "MIN_P": "Prunes token pool options whose probabilities fall below threshold relative to top pick.",
+            "PRESENCE_PENALTY": "Applies a baseline generation penalty to tokens already predicted.",
+            "REPEAT_PENALTY": "Applies a dynamic penalty to repetition loops. 1.0 = disabled.",
+            "PREDICT": "Maximum tokens computed per request. -1 enforces infinite generation loops.",
+            "SEED": "Establishes deterministic logic to enforce identical, reproducible output. -1 = random.",
+            "DRY_MULTIPLIER": "Applies a DRY sampler penalty multiplier to completely eliminate repetitive text blocks.",
+            "DRY_BASE": "Exponent base multiplier scale utilized during DRY calculation passes.",
+            "DRY_ALLOWED_LENGTH": "Length threshold of identical characters before DRY penalties activate.",
+            "DRY_PENALTY_LAST_N": "Prunes search history scope for DRY calculation. -1 evaluates whole context.",
+            "XTC_PROBABILITY": "Probability threshold of XTC sampler activation, pruning highly predictable tokens.",
+            "XTC_THRESHOLD": "Probability threshold gap of top tokens utilized in XTC calculations.",
+            "SPEC_TYPE": "Speculative decoder type (e.g. draft-mtp for native Qwen3.6 Speculative decoding).",
+            "SPEC_MAX": "Maximum speculative draft tokens generated per draft pass. Optimal: 2-3.",
+            "SPEC_MIN": "Minimal probability boundary to accept speculative draft candidates.",
+            "SPEC_DRAFT_N_MIN": "Lower speculative step limit. Greater than 0 prevents waste on fast failed steps.",
+            "DRAFT_MAX": "Upper draft tokens threshold generated during SPEC speculative operations.",
+            "DRAFT_P_MIN": "Minimum confidence threshold constraint for SPEC candidates acceptance.",
+            "REASONING": "Qwen3.6 Thinking mode constraint. auto: model decides. on: forces reasoning. off: skips thinking.",
+            "REASONING_FORMAT": "Structure of returned reasoning block (auto, deepseek style <think> blocks, none).",
+            "REASONING_BUDGET": "Allocated thinking token budget limit. -1 enables unlimited reasoning pools.",
+            "TOOLS": "Injects native system execution capabilities into agentic system prompts (all/none).",
+            "JINJA": "Enables Python-style Jinja templates compiler inside system prompt engine.",
+            "METRICS": "Exposes standard Prometheus server statistics logs endpoint under http://localhost/metrics.",
+            "MMPROJ": "Vision multimodal projection mapping path for visual companion models (Qwen2-VL).",
+            "MMPROJ_OFFLOAD": "Offloads visual projector layers computation to CUDA GPU.",
+            "IMAGE_MIN_TOKENS": "Minimum token ceiling allocated to represent visual elements.",
+            "IMAGE_MAX_TOKENS": "Maximum token ceiling allocated to represent visual elements.",
+            "CHAT_TEMPLATE": "Forces server to load a static hardcoded chat template preset (e.g., chatml).",
+            "CHAT_TEMPLATE_FILE": "System path to an external raw template file format (.txt or .jinja).",
+            "TEMPLATE_KWARGS": "Custom JSON key-value array configurations passed directly into the template renderer.",
+            "SKIP_CHAT_PARSING": "Forces prompt raw output, bypassing thinking and tool rendering handlers.",
+            "EXTRA_FLAGS": "Type any unsupported command line flags manually (e.g. --cont-batching --log-disable)."
+        };
+
+        // Static profiles representing presets inside TUI config
+        const DEFAULT_PROFILES = {
+            "default": {
+                "BIN": "~/llama.cpp/build/bin/llama-server",
+                "MODEL": "/home/peter/.cache/huggingface/hub/models--unsloth--Qwen3.6-27B-MTP-GGUF/snapshots/84362f6d157c935ba13228710689cce2922e408a/Qwen3.6-27B-UD-Q4_K_XL.gguf",
+                "HOST": "127.0.0.1",
+                "PORT": "8080",
+                "NGL": "99",
+                "CTX": "8192",
+                "FLASH_ATTN": "on",
+                "DISABLED_FIELDS": ["API_KEY", "ALIAS", "MMPROJ", "CHAT_TEMPLATE_FILE"]
+            },
+            "rtx-4090-max": {
+                "BIN": "~/llama.cpp/build/bin/llama-server",
+                "MODEL": "/home/peter/models/Qwen3.6-27B-UD-Q4_K_XL.gguf",
+                "HOST": "10.0.0.2",
+                "PORT": "8000",
+                "NGL": "99",
+                "CTX": "150000",
+                "NP": "1",
+                "THREADS": "-1",
+                "THREADS_BATCH": "8",
+                "BATCH_SIZE": "2048",
+                "UBATCH_SIZE": "512",
+                "FLASH_ATTN": "on",
+                "CACHE_K": "q8_0",
+                "CACHE_V": "q8_0",
+                "MLOCK": "on",
+                "CONT_BATCHING": "on",
+                "REASONING": "auto",
+                "REASONING_FORMAT": "deepseek",
+                "REASONING_BUDGET": "8192",
+                "JINJA": "on",
+                "METRICS": "on",
+                "EXTRA_FLAGS": "--metrics --cont-batching",
+                "DISABLED_FIELDS": ["API_KEY", "MMPROJ", "CHAT_TEMPLATE_FILE"]
+            },
+            "qwen-speculative": {
+                "BIN": "~/llama.cpp/build/bin/llama-server",
+                "MODEL": "/home/peter/.cache/huggingface/hub/models--unsloth--Qwen3.6-27B-MTP-GGUF/snapshots/84362f6d157c935ba13228710689cce2922e408a/Qwen3.6-27B-UD-Q4_K_XL.gguf",
+                "HOST": "10.0.0.2",
+                "PORT": "8000",
+                "NGL": "99",
+                "CTX": "150000",
+                "NP": "1",
+                "THREADS": "-1",
+                "THREADS_BATCH": "8",
+                "BATCH_SIZE": "2048",
+                "UBATCH_SIZE": "512",
+                "FLASH_ATTN": "on",
+                "CACHE_K": "q8_0",
+                "CACHE_V": "q8_0",
+                "MLOCK": "off",
+                "TEMP": "0.6",
+                "TOP_P": "0.95",
+                "TOP_K": "20",
+                "MIN_P": "0.0",
+                "PRESENCE_PENALTY": "0.0",
+                "REPEAT_PENALTY": "1.0",
+                "SPEC_TYPE": "draft-mtp",
+                "SPEC_MAX": "3",
+                "SPEC_MIN": "0.05",
+                "SPEC_DRAFT_N_MIN": "0",
+                "JINJA": "on",
+                "REASONING": "auto",
+                "REASONING_FORMAT": "auto",
+                "REASONING_BUDGET": "-1",
+                "METRICS": "off",
+                "SEED": "-1",
+                "CONT_BATCHING": "on",
+                "TOOLS": "all",
+                "DRY_MULTIPLIER": "0.8",
+                "DRY_BASE": "1.75",
+                "DRY_ALLOWED_LENGTH": "2",
+                "DRY_PENALTY_LAST_N": "-1",
+                "XTC_PROBABILITY": "0.5",
+                "XTC_THRESHOLD": "0.1",
+                "EXTRA_FLAGS": "",
+                "DISABLED_FIELDS": ["API_KEY", "ALIAS", "MMPROJ", "CHAT_TEMPLATE_FILE"]
+            }
+        };
+
+        // File Browser simulated filesystem paths
+        const SIMULATED_FILESYSTEM = {
+            "/home/peter": [
+                { type: "dir", name: "models", path: "/home/peter/models" },
+                { type: "dir", name: "llama.cpp", path: "/home/peter/llama.cpp" },
+                { type: "dir", name: ".cache", path: "/home/peter/.cache" },
+                { type: "file", name: "llama-server-start", path: "/home/peter/llama-server-start" }
+            ],
+            "/home/peter/models": [
+                { type: "dir", name: ".. (Parent)", path: "/home/peter" },
+                { type: "file", name: "Qwen3.6-27B-UD-Q4_K_XL.gguf", path: "/home/peter/models/Qwen3.6-27B-UD-Q4_K_XL.gguf" },
+                { type: "file", name: "Qwen3.6-1.5B-MTP-Draft.GGUF", path: "/home/peter/models/Qwen3.6-1.5B-MTP-Draft.GGUF" },
+                { type: "file", name: "Llama-3-8B-Instruct-Q8.gguf", path: "/home/peter/models/Llama-3-8B-Instruct-Q8.gguf" },
+                { type: "file", name: "qwen2-vl-7b-proj.gguf", path: "/home/peter/models/qwen2-vl-7b-proj.gguf" }
+            ],
+            "/home/peter/llama.cpp": [
+                { type: "dir", name: ".. (Parent)", path: "/home/peter" },
+                { type: "dir", name: "build", path: "/home/peter/llama.cpp/build" },
+                { type: "dir", name: "prompts", path: "/home/peter/llama.cpp/prompts" }
+            ],
+            "/home/peter/llama.cpp/build": [
+                { type: "dir", name: ".. (Parent)", path: "/home/peter/llama.cpp" },
+                { type: "dir", name: "bin", path: "/home/peter/llama.cpp/build/bin" }
+            ],
+            "/home/peter/llama.cpp/build/bin": [
+                { type: "dir", name: ".. (Parent)", path: "/home/peter/llama.cpp/build" },
+                { type: "file", name: "llama-server", path: "/home/peter/llama.cpp/build/bin/llama-server" },
+                { type: "file", name: "llama-cli", path: "/home/peter/llama.cpp/build/bin/llama-cli" }
+            ],
+            "/home/peter/.cache": [
+                { type: "dir", name: ".. (Parent)", path: "/home/peter" },
+                { type: "dir", name: "huggingface", path: "/home/peter/.cache/huggingface" }
+            ],
+            "/home/peter/.cache/huggingface": [
+                { type: "dir", name: ".. (Parent)", path: "/home/peter/.cache" },
+                { type: "dir", name: "hub", path: "/home/peter/.cache/huggingface/hub" }
+            ],
+            "/home/peter/.cache/huggingface/hub": [
+                { type: "dir", name: ".. (Parent)", path: "/home/peter/.cache/huggingface" },
+                { type: "dir", name: "models--unsloth--Qwen3.6-27B-MTP-GGUF", path: "/home/peter/.cache/huggingface/hub/models--unsloth--Qwen3.6-27B-MTP-GGUF" }
+            ],
+            "/home/peter/.cache/huggingface/hub/models--unsloth--Qwen3.6-27B-MTP-GGUF": [
+                { type: "dir", name: ".. (Parent)", path: "/home/peter/.cache/huggingface/hub" },
+                { type: "dir", name: "snapshots", path: "/home/peter/.cache/huggingface/hub/models--unsloth--Qwen3.6-27B-MTP-GGUF/snapshots" }
+            ],
+            "/home/peter/.cache/huggingface/hub/models--unsloth--Qwen3.6-27B-MTP-GGUF/snapshots": [
+                { type: "dir", name: ".. (Parent)", path: "/home/peter/.cache/huggingface/hub/models--unsloth--Qwen3.6-27B-MTP-GGUF" },
+                { type: "dir", name: "84362f6d157c935ba13228710689cce2922e408a", path: "/home/peter/.cache/huggingface/hub/models--unsloth--Qwen3.6-27B-MTP-GGUF/snapshots/84362f6d157c935ba13228710689cce2922e408a" }
+            ],
+            "/home/peter/.cache/huggingface/hub/models--unsloth--Qwen3.6-27B-MTP-GGUF/snapshots/84362f6d157c935ba13228710689cce2922e408a": [
+                { type: "dir", name: ".. (Parent)", path: "/home/peter/.cache/huggingface/hub/models--unsloth--Qwen3.6-27B-MTP-GGUF/snapshots" },
+                { type: "file", name: "Qwen3.6-27B-UD-Q4_K_XL.gguf", path: "/home/peter/.cache/huggingface/hub/models--unsloth--Qwen3.6-27B-MTP-GGUF/snapshots/84362f6d157c935ba13228710689cce2922e408a/Qwen3.6-27B-UD-Q4_K_XL.gguf" }
+            ]
+        };
+
+        // Active State variables
+        let currentProfile = "qwen-speculative";
+        let isConfigDirty = false;
+        let activeConfig = {};
+        let activeBrowseTarget = "";
+        let deleteCandidate = "";
+        let customProfiles = {};
+        let currentCwd = "/home/peter/models";
+
+        // Load custom profiles from localStorage if present
+        function initStorage() {
+            try {
+                const stored = localStorage.getItem("llama_launcher_custom_profiles");
+                if (stored) {
+                    customProfiles = JSON.parse(stored);
+                }
+            } catch (e) {
+                console.error("Local storage error:", e);
+            }
+        }
+
+        // Complete standard profile loading sequence
+        function getProfileData(name) {
+            if (DEFAULT_PROFILES[name]) {
+                return JSON.parse(JSON.stringify(DEFAULT_PROFILES[name]));
+            }
+            if (customProfiles[name]) {
+                return JSON.parse(JSON.stringify(customProfiles[name]));
+            }
+            return JSON.parse(JSON.stringify(DEFAULT_PROFILES["default"]));
+        }
+
+        // Return sorted list of all profile identifiers
+        function getAllProfileNames() {
+            const list = Object.keys(DEFAULT_PROFILES);
+            Object.keys(customProfiles).forEach(k => {
+                if (!list.includes(k)) list.push(k);
+            });
+            return list;
+        }
+
+        // Initialize UI components and parameters
+        window.addEventListener("load", () => {
+            initStorage();
+            
+            // Build the dynamic parameters list inside the main panel
+            buildParameterPanels();
+            
+            // Set initial state from the preset
+            loadProfile(currentProfile, false);
+            
+            // Generate command lines
+            updateCommandLinePreview();
+            
+            // Scroll panels listener
+            bindFormListeners();
+        });
+
+        // Loop over the SECTIONS array and render HTML accordion structures programmatically
+        function buildParameterPanels() {
+            const mainContainer = document.getElementById("parameters-container");
+            mainContainer.innerHTML = "";
+
+            SECTIONS.forEach((section, index) => {
+                const card = document.createElement("div");
+                card.className = "card expanded"; // Initially all expanded to reveal fields
+                card.id = `section-card-${index}`;
+
+                const header = document.createElement("div");
+                header.className = "card-header";
+                header.innerHTML = `
+                    <span>${section.icon} &nbsp;${section.title}</span>
+                    <span class="card-chevron">▶</span>
+                `;
+                
+                // Allow collapse/expansion
+                header.addEventListener("click", () => {
+                    card.classList.toggle("expanded");
+                });
+
+                const content = document.createElement("div");
+                content.className = "card-content";
+
+                const grid = document.createElement("div");
+                grid.className = "card-grid";
+
+                section.fields.forEach(field => {
+                    const row = document.createElement("div");
+                    row.className = `field-row ${field.mandatory ? 'mandatory' : ''}`;
+                    row.id = `row-field-${field.key}`;
+
+                    // Checkbox element (absent for mandatory fields)
+                    let checkCol = "";
+                    if (field.mandatory) {
+                        checkCol = `<div class="chk-spacer"></div>`;
+                    } else {
+                        checkCol = `<div class="chk-btn checked" id="chk-btn-${field.key}" onclick="toggleFieldRow('${field.key}')">✔</div>`;
+                    }
+
+                    // Help trigger icon
+                    const helpIcon = `<div class="help-trigger" onclick="focusHelpPanel('${field.key}')">ⓘ</div>`;
+
+                    // Parameter inputs well
+                    let inputWell = "";
+                    if (field.type === "select") {
+                        let optHtml = "";
+                        field.options.forEach(opt => {
+                            optHtml += `<option value="${opt}">${opt === "" ? "-- default --" : opt}</option>`;
+                        });
+                        inputWell = `
+                            <div class="field-container">
+                                <select id="field-input-${field.key}" onchange="onFieldInputChanged('${field.key}')">
+                                    ${optHtml}
+                                </select>
+                            </div>
+                        `;
+                    } else if (field.type === "file") {
+                        inputWell = `
+                            <div class="field-container">
+                                <input type="text" id="field-input-${field.key}" oninput="onFieldInputChanged('${field.key}')">
+                                <button class="btn-browse" id="btn-browse-${field.key}" onclick="openFileBrowser('${field.key}')">📂</button>
+                            </div>
+                        `;
+                    } else {
+                        inputWell = `
+                            <div class="field-container">
+                                <input type="text" id="field-input-${field.key}" oninput="onFieldInputChanged('${field.key}')">
+                            </div>
+                        `;
+                    }
+
+                    // Create full structure
+                    row.innerHTML = `
+                        ${checkCol}
+                        <div class="field-label" onclick="focusHelpPanel('${field.key}')" title="Click to view parameter help">${field.label}</div>
+                        ${helpIcon}
+                        ${inputWell}
+                        <div class="field-tooltip" id="tooltip-${field.key}">${PARAM_HELP[field.key] || "No documentation active."}</div>
+                    `;
+
+                    grid.appendChild(row);
+                });
+
+                content.appendChild(grid);
+                card.appendChild(header);
+                card.appendChild(content);
+                mainContainer.appendChild(card);
+            });
+        }
+
+        // Binds general cursor focus triggers for sidebar descriptions
+        function bindFormListeners() {
+            // Find all input and select well boxes
+            const inputs = document.querySelectorAll("input, select");
+            inputs.forEach(el => {
+                const key = el.id.replace("field-input-", "");
+                
+                el.addEventListener("focus", () => {
+                    focusHelpPanel(key);
+                });
+            });
+        }
+
+        // Highlights specific helper info inside sidebar panels
+        function focusHelpPanel(key) {
+            const panel = document.getElementById("sidebar-info-panel");
+            const titleEl = document.getElementById("info-panel-title");
+            const descEl = document.getElementById("info-panel-desc");
+
+            const labelName = PARAM_HELP[key] ? key : "Parameter Help";
+            const helperText = PARAM_HELP[key] ? PARAM_HELP[key] : "Hover over or click a parameter well to see its command line argument syntax and documentation.";
+
+            titleEl.innerHTML = `💡 Help: ${labelName}`;
+            descEl.innerHTML = `
+                ${helperText}
+                <br/><br/>
+                <span class="tooltip-accent">Configuration Key:</span> <code style="color: var(--aqua);">${key}</code>
+            `;
+            panel.classList.add("active");
+        }
+
+        // Manually toggles enabled status on specific optional parameter rows
+        function toggleFieldRow(key) {
+            const chk = document.getElementById(`chk-btn-${key}`);
+            const row = document.getElementById(`row-field-${key}`);
+            const input = document.getElementById(`field-input-${key}`);
+            const browseBtn = document.getElementById(`btn-browse-${key}`);
+
+            const isChecked = chk.classList.contains("checked");
+
+            if (isChecked) {
+                chk.classList.remove("checked");
+                chk.innerHTML = "✖";
+                row.classList.add("dimmed");
+                input.disabled = true;
+                if (browseBtn) browseBtn.disabled = true;
+                
+                // Add key to disabled list
+                if (!activeConfig.DISABLED_FIELDS.includes(key)) {
+                    activeConfig.DISABLED_FIELDS.push(key);
+                }
+            } else {
+                chk.classList.add("checked");
+                chk.innerHTML = "✔";
+                row.classList.remove("dimmed");
+                input.disabled = false;
+                if (browseBtn) browseBtn.disabled = false;
+
+                // Remove key from disabled list
+                activeConfig.DISABLED_FIELDS = activeConfig.DISABLED_FIELDS.filter(k => k !== key);
+            }
+
+            // Flag config as dirty
+            setDirtyStatus(true);
+            
+            // Trigger recalculation VRAM + Command Line
+            updateCommandLinePreview();
+            calculateVRAMEstimate();
+        }
+
+        // Catches user typing and updates active cache
+        function onFieldInputChanged(key) {
+            const inputVal = document.getElementById(`field-input-${key}`).value;
+            activeConfig[key] = inputVal;
+            
+            setDirtyStatus(true);
+            updateCommandLinePreview();
+            calculateVRAMEstimate();
+        }
+
+        // Sets dirty flag indicators inside sidebar panel
+        function setDirtyStatus(dirty) {
+            isConfigDirty = dirty;
+            const tag = document.getElementById("profile-tag-element");
+            
+            if (dirty) {
+                tag.className = "profile-tag dirty";
+                tag.innerHTML = `⭐ ${currentProfile} (modified)`;
+            } else {
+                tag.className = "profile-tag";
+                tag.innerHTML = `⭐ ${currentProfile}`;
+            }
+        }
+
+        // Loads data presets into form inputs
+        function loadProfile(name, showSuccessToast = true) {
+            currentProfile = name;
+            activeConfig = getProfileData(name);
+
+            // Default fallback lists of disabled fields
+            if (!activeConfig.DISABLED_FIELDS) {
+                activeConfig.DISABLED_FIELDS = [];
+            }
+
+            // Iterate over form keys and populate inputs
+            SECTIONS.forEach(sec => {
+                sec.fields.forEach(field => {
+                    const val = activeConfig[field.key] !== undefined ? activeConfig[field.key] : "";
+                    const inputEl = document.getElementById(`field-input-${field.key}`);
+                    
+                    if (inputEl) {
+                        inputEl.value = val;
+                    }
+
+                    // Handle enabled/disabled row properties
+                    const isMandatory = field.mandatory;
+                    const isRowDisabled = activeConfig.DISABLED_FIELDS.includes(field.key);
+
+                    const chkBtn = document.getElementById(`chk-btn-${field.key}`);
+                    const row = document.getElementById(`row-field-${field.key}`);
+                    const browseBtn = document.getElementById(`btn-browse-${field.key}`);
+
+                    if (!isMandatory && chkBtn) {
+                        if (isRowDisabled) {
+                            chkBtn.classList.remove("checked");
+                            chkBtn.innerHTML = "✖";
+                            row.classList.add("dimmed");
+                            inputEl.disabled = true;
+                            if (browseBtn) browseBtn.disabled = true;
+                        } else {
+                            chkBtn.classList.add("checked");
+                            chkBtn.innerHTML = "✔";
+                            row.classList.remove("dimmed");
+                            inputEl.disabled = false;
+                            if (browseBtn) browseBtn.disabled = false;
+                        }
+                    } else {
+                        // Mandatory rows are never dimmed
+                        row.classList.remove("dimmed");
+                        inputEl.disabled = false;
+                        if (browseBtn) browseBtn.disabled = false;
+                    }
+                });
+            });
+
+            setDirtyStatus(false);
+            updateCommandLinePreview();
+            calculateVRAMEstimate();
+
+            if (showSuccessToast) {
+                triggerToastNotification(`Profile preset '${name}' loaded successfully!`, "success");
+            }
+        }
+
+        // Simulated VRAM allocation calculations
+        function calculateVRAMEstimate() {
+            let ngl = 0;
+            let ctx = 8192;
+            let batch = 2048;
+            let useFlashAttn = true;
+            let cacheK = "q8_0";
+            let specType = "none";
+            let useMmp = false;
+
+            // Load values from inputs safely
+            try {
+                const isNglEnabled = !activeConfig.DISABLED_FIELDS.includes("NGL");
+                if (isNglEnabled) {
+                    ngl = parseInt(document.getElementById("field-input-NGL").value) || 0;
+                }
+                
+                const isCtxEnabled = !activeConfig.DISABLED_FIELDS.includes("CTX");
+                if (isCtxEnabled) {
+                    ctx = parseInt(document.getElementById("field-input-CTX").value) || 8192;
+                }
+
+                const isFlashEnabled = !activeConfig.DISABLED_FIELDS.includes("FLASH_ATTN");
+                if (isFlashEnabled) {
+                    useFlashAttn = document.getElementById("field-input-FLASH_ATTN").value !== "off";
+                }
+
+                const isCacheKEnabled = !activeConfig.DISABLED_FIELDS.includes("CACHE_K");
+                if (isCacheKEnabled) {
+                    cacheK = document.getElementById("field-input-CACHE_K").value;
+                }
+
+                const isSpecEnabled = !activeConfig.DISABLED_FIELDS.includes("SPEC_TYPE");
+                if (isSpecEnabled) {
+                    specType = document.getElementById("field-input-SPEC_TYPE").value;
+                }
+
+                const isMmpEnabled = !activeConfig.DISABLED_FIELDS.includes("MMPROJ");
+                if (isMmpEnabled) {
+                    useMmp = document.getElementById("field-input-MMPROJ").value.trim().length > 0;
+                }
+            } catch (e) {
+                console.error("VRAM estimate collection error:", e);
+            }
+
+            // Estimate model weights memory: 27B model quantized Q4 is roughly 16.5GB
+            let baseVram = 16.5; 
+            
+            // VRAM multiplier logic for GPU layers offloaded
+            let modelOffloadRatio = Math.min(ngl / 99, 1.0);
+            let weightsOnGpu = baseVram * modelOffloadRatio;
+
+            // Cache allocation memory formulas (rough metrics approximation)
+            let cacheMultiplier = cacheK === "f16" ? 1.0 : (cacheK === "q8_0" ? 0.5 : 0.25);
+            let kvMemory = (ctx * 0.00015) * cacheMultiplier;
+            if (!useFlashAttn) kvMemory *= 1.4; // Flash attn optimizes KV layouts
+
+            // Additional VRAM drivers
+            let speculatorOverhead = specType !== "none" ? 1.5 : 0;
+            let visionProjectorOverhead = useMmp ? 0.8 : 0;
+
+            let totalEstimate = weightsOnGpu + kvMemory + speculatorOverhead + visionProjectorOverhead;
+            
+            // Constrain within bounds of RTX 4090 limits
+            totalEstimate = Math.min(Math.max(totalEstimate, 0), 32); 
+
+            // Render stats
+            const percentage = Math.round((totalEstimate / 24) * 100);
+            const textEl = document.getElementById("vram-stat-text");
+            const barEl = document.getElementById("vram-meter-bar");
+
+            textEl.innerHTML = `${totalEstimate.toFixed(1)} GB / 24 GB (${percentage}%)`;
+            barEl.style.width = `${Math.min(percentage, 100)}%`;
+
+            // Style thresholds based on saturation
+            if (percentage > 95) {
+                barEl.className = "meter-fill crit";
+                textEl.style.color = "var(--red)";
+            } else if (percentage > 85) {
+                barEl.className = "meter-fill warn";
+                textEl.style.color = "var(--gold)";
+            } else {
+                barEl.className = "meter-fill";
+                textEl.style.color = "var(--fg-cream)";
+            }
+        }
+
+        // Live Bash shell generator logic mirroring python TUI parser
+        function updateCommandLinePreview() {
+            const box = document.getElementById("cmd-preview-box");
+            
+            // Build key maps to verify custom flags
+            const flagMapping = {
+                "MODEL": "-m",
+                "HOST": "--host",
+                "PORT": "--port",
+                "NGL": "-ngl",
+                "CTX": "-c",
+                "NP": "-np",
+                "THREADS": "-t",
+                "BATCH_SIZE": "-b",
+                "UBATCH_SIZE": "-ub",
+                "TEMP": "--temp",
+                "TOP_P": "--top-p",
+                "TOP_K": "--top-k",
+                "MIN_P": "--min-p",
+                "PRESENCE_PENALTY": "--presence-penalty",
+                "REPEAT_PENALTY": "--repeat-penalty",
+                "CACHE_K": "--cache-type-k",
+                "CACHE_V": "--cache-type-v",
+                "SPEC_TYPE": "--spec-type",
+                "SPEC_MAX": "--spec-draft-n-max",
+                "SPEC_MIN": "--spec-draft-p-min",
+                "SPEC_DRAFT_N_MIN": "--spec-draft-n-min",
+                "SEED": "-s",
+                "REASONING": "--reasoning",
+                "REASONING_FORMAT": "--reasoning-format",
+                "REASONING_BUDGET": "--reasoning-budget",
+                "CHAT_TEMPLATE": "--chat-template",
+                "CHAT_TEMPLATE_FILE": "--chat-template-file",
+                "TEMPLATE_KWARGS": "--chat-template-kwargs",
+                "MMPROJ": "--mmproj",
+                "CTX_CHECKPOINTS": "--ctx-checkpoints",
+                "CACHE_RAM": "--cache-ram",
+                "THREADS_BATCH": "--threads-batch",
+                "SPLIT_MODE": "--split-mode",
+                "MAIN_GPU": "--main-gpu",
+                "PREDICT": "--predict",
+                "DRAFT_MAX": "--draft-max",
+                "DRAFT_P_MIN": "--draft-p-min",
+                "IMAGE_MIN_TOKENS": "--image-min-tokens",
+                "IMAGE_MAX_TOKENS": "--image-max-tokens",
+                "TOOLS": "--tools",
+                "TENSOR_SPLIT": "--tensor-split",
+                "TIMEOUT": "--timeout",
+                "THREADS_HTTP": "--threads-http",
+                "CACHE_REUSE": "--cache-reuse",
+                "DRY_MULTIPLIER": "--dry-multiplier",
+                "DRY_BASE": "--dry-base",
+                "DRY_ALLOWED_LENGTH": "--dry-allowed-length",
+                "DRY_PENALTY_LAST_N": "--dry-penalty-last-n",
+                "XTC_PROBABILITY": "--xtc-probability",
+                "XTC_THRESHOLD": "--xtc-threshold",
+            };
+
+            let cmd = [];
+            
+            // Get binary path
+            let bin = activeConfig["BIN"] || "~/llama.cpp/build/bin/llama-server";
+            // Escape/normalize path
+            bin = bin.replace("~", "/home/peter");
+            cmd.push(bin);
+
+            // Populate mapping flags
+            SECTIONS.forEach(sec => {
+                sec.fields.forEach(field => {
+                    const key = field.key;
+                    const val = (document.getElementById(`field-input-${key}`).value || "").trim();
+                    const isEnabled = !activeConfig.DISABLED_FIELDS.includes(key);
+
+                    if (isEnabled && val !== "") {
+                        if (flagMapping[key]) {
+                            cmd.push(flagMapping[key]);
+                            cmd.push(val);
+                        } else {
+                            // Non-standard flag handlers
+                            if (key === "FLASH_ATTN") {
+                                cmd.push("--flash-attn");
+                                cmd.push(val);
+                            } else if (key === "JINJA") {
+                                if (["on", "1", "true", "yes"].includes(val.toLowerCase())) {
+                                    cmd.push("--jinja");
+                                } else {
+                                    cmd.push("--no-jinja");
+                                }
+                            } else if (key === "MLOCK") {
+                                if (["on", "1", "true", "yes"].includes(val.toLowerCase())) {
+                                    cmd.push("--mlock");
+                                }
+                            } else if (key === "METRICS") {
+                                if (["on", "1", "true", "yes"].includes(val.toLowerCase())) {
+                                    cmd.push("--metrics");
+                                }
+                            } else if (key === "WEBUI") {
+                                if (["on", "1", "true", "yes", "auto"].includes(val.toLowerCase())) {
+                                    cmd.push("--webui");
+                                } else {
+                                    cmd.push("--no-webui");
+                                }
+                            } else if (key === "CONT_BATCHING") {
+                                if (["on", "1", "true", "yes"].includes(val.toLowerCase())) {
+                                    cmd.push("--cont-batching");
+                                } else {
+                                    cmd.push("--no-cont-batching");
+                                }
+                            } else if (key === "API_KEY") {
+                                cmd.push("--api-key");
+                                cmd.push(val);
+                            } else if (key === "ALIAS") {
+                                cmd.push("-a");
+                                cmd.push(val);
+                            } else if (key === "MMPROJ_OFFLOAD") {
+                                if (["off", "0", "false", "no"].includes(val.toLowerCase())) {
+                                    cmd.push("--no-mmproj-offload");
+                                }
+                            } else if (key === "SKIP_CHAT_PARSING") {
+                                if (["on", "1", "true", "yes"].includes(val.toLowerCase())) {
+                                    cmd.push("--skip-chat-parsing");
+                                }
+                            } else if (key === "NUMA") {
+                                if (val !== "none") {
+                                    cmd.push("--numa");
+                                    cmd.push(val);
+                                }
+                            } else if (key === "NO_MMAP") {
+                                if (val === "on") {
+                                    cmd.push("--no-mmap");
+                                }
+                            } else if (key === "CACHE_PROMPT") {
+                                if (val === "on") {
+                                    cmd.push("--cache-prompt");
+                                } else {
+                                    cmd.push("--no-cache-prompt");
+                                }
+                            } else if (key === "EXTRA_FLAGS") {
+                                // Split flag lines safely
+                                val.split(/\s+/).forEach(arg => {
+                                    if (arg.trim() !== "") cmd.push(arg);
+                                });
+                            }
+                        }
+                    }
+                });
+            });
+
+            // Escape parameters inside preview block to mirror subprocess outputs
+            const formattedCmd = cmd.map((arg, idx) => {
+                if (idx === 0) return arg;
+                if (arg.startsWith("-")) return `\\\n  ${arg}`;
+                // Quote arguments containing whitespace or special configurations
+                if (/\s|[\[\]\{\}\(\)\*\?\&]/.test(arg)) return `"${arg}"`;
+                return arg;
+            }).join(" ");
+
+            box.innerHTML = formattedCmd;
+        }
+
+        // Triggers popups animations and appends toasts inside list rack
+        function triggerToastNotification(message, type = "success") {
+            const rack = document.getElementById("toast-container");
+            
+            const toast = document.createElement("div");
+            toast.className = `toast-banner ${type}`;
+            
+            const icon = type === "success" ? "✨" : (type === "error" ? "⚠" : "💡");
+            toast.innerHTML = `<span>${icon}</span> &nbsp; <span>${message}</span>`;
+            
+            rack.appendChild(toast);
+            
+            // Trigger slide in
+            setTimeout(() => {
+                toast.classList.add("active");
+            }, 10);
+
+            // Timeout prunes element
+            setTimeout(() => {
+                toast.classList.remove("active");
+                setTimeout(() => {
+                    toast.remove();
+                }, 300);
+            }, 2500);
+        }
+
+        // Copies CLI preview buffer to system clipboard
+        function copyCommandLine() {
+            const previewText = document.getElementById("cmd-preview-box").innerText;
+            // Strip linebreaks and backslashes for easy execution
+            const cleanCommand = previewText.replace(/\\\n\s+/g, " ");
+
+            navigator.clipboard.writeText(cleanCommand).then(() => {
+                const btn = document.getElementById("btn-copy-command");
+                btn.innerHTML = "COPIED!";
+                btn.className = "btn-copy flashed";
+
+                triggerToastNotification("Shell Command copied to clipboard!", "success");
+
+                setTimeout(() => {
+                    btn.innerHTML = "COPY CODE";
+                    btn.className = "btn-copy";
+                }, 1500);
+            }).catch(e => {
+                triggerToastNotification("Clipboard access blocked by browser.", "error");
+            });
+        }
+
+        // Modal displays controller
+        function openModal(id) {
+            document.getElementById(id).classList.add("active");
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.remove("active");
+        }
+
+        // Modals Action: Open Preset Loading List
+        function openLoadPresetModal() {
+            renderLoadPresetsList();
+            openModal("modal-load");
+        }
+
+        // Build presets list with interactive delete hooks
+        function renderLoadPresetsList() {
+            const grid = document.getElementById("load-profiles-grid");
+            grid.innerHTML = "";
+
+            const profiles = getAllProfileNames();
+
+            profiles.forEach(pName => {
+                const isDefault = Object.keys(DEFAULT_PROFILES).includes(pName);
+                const isActive = pName === currentProfile;
+
+                const row = document.createElement("div");
+                row.className = `profile-list-row ${isActive ? 'active-profile' : ''}`;
+                
+                // Clicking load profile data
+                row.addEventListener("click", (e) => {
+                    // Bypass loading if delete icon was targeted
+                    if (e.target.closest(".btn-trash")) return;
+                    
+                    loadProfile(pName);
+                    closeModal("modal-load");
+                });
+
+                // Display trashcan strictly for custom models
+                const trashBtn = isDefault ? "" : `
+                    <button class="btn-trash" title="Delete custom profile preset" onclick="openDeleteWarningModal('${pName}')">
+                        🗑
+                    </button>
+                `;
+
+                row.innerHTML = `
+                    <span class="profile-list-name">
+                        ${isActive ? '⭐' : '📄'} &nbsp;${pName} 
+                        ${isDefault ? '<span style="color: var(--gray); font-size:10px; border:1px solid var(--bg-well); padding:1px 4px; border-radius:3px;">System</span>' : ''}
+                    </span>
+                    ${trashBtn}
+                `;
+
+                grid.appendChild(row);
+            });
+        }
+
+        // Modals Action: Open Preset Saving Selector
+        function openSavePresetModal() {
+            const select = document.getElementById("save-overwrite-select");
+            select.innerHTML = '<option value="">-- Choose Existing Profile (Optional) --</option>';
+
+            const profiles = getAllProfileNames();
+            profiles.forEach(pName => {
+                select.innerHTML += `<option value="${pName}">${pName}</option>`;
+            });
+
+            document.getElementById("save-new-name-input").value = currentProfile;
+            openModal("modal-save");
+        }
+
+        function onOverwriteSelectChanged() {
+            const selectVal = document.getElementById("save-overwrite-select").value;
+            if (selectVal) {
+                document.getElementById("save-new-name-input").value = selectVal;
+            }
+        }
+
+        // Preserves active configs in Session cache
+        function confirmSaveProfile() {
+            let name = document.getElementById("save-new-name-input").value.trim();
+            // Validate name formats
+            name = name.toLowerCase().replace(/[^a-z0-9\-_]/g, "-");
+
+            if (!name) {
+                triggerToastNotification("Please enter a valid profile name.", "error");
+                return;
+            }
+
+            // Dual-save configuration snapshot
+            const configCopy = JSON.parse(JSON.stringify(activeConfig));
+            
+            // Gather input fields directly
+            SECTIONS.forEach(sec => {
+                sec.fields.forEach(field => {
+                    const inputVal = document.getElementById(`field-input-${field.key}`).value;
+                    configCopy[field.key] = inputVal;
+                });
+            });
+
+            customProfiles[name] = configCopy;
+            
+            // Persist to localstorage
+            try {
+                localStorage.setItem("llama_launcher_custom_profiles", JSON.stringify(customProfiles));
+            } catch (e) {
+                console.error("Local storage save error:", e);
+            }
+
+            currentProfile = name;
+            setDirtyStatus(false);
+            closeModal("modal-save");
+            triggerToastNotification(`Profile preset '${name}' saved successfully!`, "success");
+        }
+
+        // Modals Action: Remove Profiles Warning
+        function openDeleteWarningModal(name) {
+            deleteCandidate = name;
+            document.getElementById("delete-warning-text").innerHTML = `Are you sure you want to delete profile preset <code style="color: var(--red); font-weight:bold;">${name}</code>? This action will permanently remove it from local session memory.`;
+            openModal("modal-delete");
+        }
+
+        function confirmDeleteProfile() {
+            if (!deleteCandidate) return;
+
+            delete customProfiles[deleteCandidate];
+            try {
+                localStorage.setItem("llama_launcher_custom_profiles", JSON.stringify(customProfiles));
+            } catch (e) {
+                console.error("Local storage delete error:", e);
+            }
+
+            triggerToastNotification(`Profile preset '${deleteCandidate}' deleted!`, "error");
+
+            if (currentProfile === deleteCandidate) {
+                loadProfile("default", false);
+            }
+
+            closeModal("modal-delete");
+            deleteCandidate = "";
+
+            // Re-render preset loading grid
+            renderLoadPresetsList();
+        }
+
+        // Modals Action: Open simulated File Browser modal
+        function openFileBrowser(fieldKey) {
+            activeBrowseTarget = fieldKey;
+            
+            // Set contextual directory paths
+            if (fieldKey === "BIN") {
+                currentCwd = "/home/peter/llama.cpp/build/bin";
+            } else if (fieldKey === "MODEL" || fieldKey === "MMPROJ") {
+                currentCwd = "/home/peter/models";
+            } else {
+                currentCwd = "/home/peter";
+            }
+
+            renderFileBrowserList();
+            openModal("modal-browse");
+        }
+
+        // Renders filesystem rows contextual to Cwd
+        function renderFileBrowserList() {
+            document.getElementById("fb-cwd-path").innerHTML = currentCwd;
+            const grid = document.getElementById("fb-files-grid");
+            grid.innerHTML = "";
+
+            const items = SIMULATED_FILESYSTEM[currentCwd] || [];
+
+            items.forEach(item => {
+                const row = document.createElement("div");
+                row.className = `file-row ${item.type}`;
+                
+                row.addEventListener("click", () => {
+                    if (item.type === "dir") {
+                        currentCwd = item.path;
+                        renderFileBrowserList();
+                    } else {
+                        // File selected! Fill parent input
+                        document.getElementById(`field-input-${activeBrowseTarget}`).value = item.path;
+                        onFieldInputChanged(activeBrowseTarget);
+                        
+                        triggerToastNotification(`Selected: ${item.name}`, "success");
+                        closeModal("modal-browse");
+                    }
+                });
+
+                const icon = item.type === "dir" ? "📁" : "📄";
+                row.innerHTML = `
+                    <span class="file-icon">${icon}</span>
+                    <span>${item.name}</span>
+                `;
+                grid.appendChild(row);
+            });
+        }
+
+        // Running Terminal Simulator full screen console launch
+        function startSimulatedServer() {
+            const overlay = document.getElementById("terminal-screen");
+            const consoleBuffer = document.getElementById("term-console-buffer");
+            
+            // Build active command lines
+            const previewText = document.getElementById("cmd-preview-box").innerText;
+            const cleanCommand = previewText.replace(/\\\n\s+/g, " ");
+
+            overlay.classList.add("active");
+            consoleBuffer.innerHTML = "";
+
+            // Dynamic line printing arrays simulating boot log sequence
+            const logs = [
+                { type: "cmd-echo", text: `$ ${cleanCommand}` },
+                { type: "system", text: "[2026-05-21 16:50:02] llama_server_start: initializing server configuration context..." },
+                { type: "system", text: "[2026-05-21 16:50:02] llama_model_load: loading weights from target filesystem..." },
+                { type: "system", text: `[2026-05-21 16:50:03] llama_model_load: loading file: ${document.getElementById("field-input-MODEL").value}` },
+                { type: "system", text: `[2026-05-21 16:50:05] llama_model_load: GGUF file properties parsed successfully.` },
+                { type: "system", text: `[2026-05-21 16:50:05] llama_model_load: offloading layers onto device 0 (RTX 4090)...` },
+                { type: "system", text: `[2026-05-21 16:50:06] llama_model_load: offloaded ${document.getElementById("field-input-NGL").value}/99 layers (100% CUDA core coverage)` },
+                { type: "system", text: "[2026-05-21 16:50:07] llama_model_load: CUDA VRAM footprint calculated: 16.4 GB / 24.0 GB allocated." },
+                { type: "system", text: "[2026-05-21 16:50:07] llama_model_load: loaded weights cleanly into GPU VRAM banks." },
+                { type: "system", text: `[2026-05-21 16:50:08] llama_new_context_with_model: context sizing n_ctx = ${document.getElementById("field-input-CTX").value}, n_batch = ${document.getElementById("field-input-BATCH_SIZE").value}, n_ubatch = ${document.getElementById("field-input-UBATCH_SIZE").value}` },
+                { type: "system", text: `[2026-05-21 16:50:08] llama_new_context_with_model: flash_attn = ${document.getElementById("field-input-FLASH_ATTN").value === "off" ? "0" : "1"}` },
+                { type: "system", text: `[2026-05-21 16:50:09] llama_new_context_with_model: cache_type_k = ${document.getElementById("field-input-CACHE_K").value}, cache_type_v = ${document.getElementById("field-input-CACHE_V").value}` },
+                { type: "system", text: "[2026-05-21 16:50:09] speculative_decoding_init: active draft SPEC decoder enabled (speculator model draft-mtp)" },
+                { type: "system", text: "[2026-05-21 16:50:10] speculative_decoding_init: pre-warmed draft tensor layers successfully." },
+                { type: "success", text: "[2026-05-21 16:50:10] api_server_init: HTTP API JSON engine listening for endpoints..." },
+                { type: "success", text: `[2026-05-21 16:50:10] api_server_init: LOCALHOST ROUTE: http://${document.getElementById("field-input-HOST").value}:${document.getElementById("field-input-PORT").value}` },
+                { type: "success", text: "------------------------------------------------------------" },
+                { type: "success", text: "🚀 LLAMA SERVER ONLINE & ACTIVE | STATUS: 200 OK | INFERENCE THREAD BLOCKED" },
+                { type: "system", text: "API requests queue idle... Blinking retro cursor waiting..." }
+            ];
+
+            let delay = 100;
+            logs.forEach((line, index) => {
+                setTimeout(() => {
+                    const row = document.createElement("div");
+                    row.className = `term-line ${line.type}`;
+                    row.innerHTML = line.text;
+                    consoleBuffer.appendChild(row);
+                    
+                    // Auto scroll to bottom
+                    consoleBuffer.scrollTop = consoleBuffer.scrollHeight;
+
+                    // Append blinking cursor on last line
+                    if (index === logs.length - 1) {
+                        const cursor = document.createElement("span");
+                        cursor.className = "term-cursor";
+                        row.appendChild(cursor);
+                    }
+                }, delay);
+                
+                // Context timing delays to simulate computer processes
+                delay += (Math.random() * 400) + 150;
+            });
+        }
+
+        function stopSimulatedServer() {
+            document.getElementById("terminal-screen").classList.remove("active");
+            triggerToastNotification("Llama Server daemon terminated cleanly.", "error");
+        }
+    </script>
+</body>
+</html>
