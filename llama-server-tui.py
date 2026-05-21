@@ -893,8 +893,11 @@ class LlamaConfigApp(App):
         text-style: bold;
     }
     ToastRack {
-        align: center middle;
         dock: none;
+        layer: _toast;
+        align: center middle;
+        width: 100%;
+        height: 100%;
     }
     """
 
@@ -1131,15 +1134,15 @@ class LlamaConfigApp(App):
                     self.load_profile_data(data)
                     self.active_profile = profile_name
                     self.save_config()  # Dual-saves to update ACTIVE_PROFILE in config.json
-                    self.notify(f"Profile '{profile_name}' loaded successfully", severity="information")
+                    self.notify(f"Profile '{profile_name}' loaded successfully", severity="information", timeout=2.0)
                 except Exception as e:
-                    self.notify(f"Error loading profile: {e}", severity="error")
+                    self.notify(f"Error loading profile: {e}", severity="error", timeout=2.0)
 
     def _on_profile_saved_as(self, profile_name: str) -> None:
         if profile_name:
             self.active_profile = profile_name
             self.save_config()  # Dual-saves to both config.json and the new profile
-            self.notify(f"Profile saved as '{profile_name}'", severity="information")
+            self.notify(f"Profile saved as '{profile_name}'", severity="information", timeout=2.0)
 
     def load_profile_data(self, data: dict) -> None:
         self.config.update(data)
@@ -1188,7 +1191,7 @@ class LlamaConfigApp(App):
                 json.dump(self.config, f, indent=4)
         except Exception as e:
             try:
-                self.notify(f"Failed to save profile file: {e}", severity="error")
+                self.notify(f"Failed to save profile file: {e}", severity="error", timeout=2.0)
             except Exception:
                 pass
 
