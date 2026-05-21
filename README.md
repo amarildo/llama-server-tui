@@ -62,7 +62,7 @@ python3 llama-server-tui.py
 
 ## 🛠️ Calibration for RTX 4090 & Qwen 3.6 MTP
 
-To achieve maximum text generation speeds (**90+ tokens/second**), our presets are configured as follows:
+To achieve maximum text generation speeds (**90+ tokens/second**), my presets are configured as follows:
 
 * **Flash Attention:** Set to `on` (drastically lowers VRAM footprint).
 * **KV Cache Quantization:** `CACHE_K` and `CACHE_V` set to `q8_0` (halves context RAM usage with zero quality loss).
