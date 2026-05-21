@@ -1174,6 +1174,12 @@ class LlamaConfigApp(App):
         text-style: bold;
         width: 1fr;
     }
+    #preview-hint {
+        color: #7c6f64;
+        text-style: dim;
+        margin: 0;
+        padding: 0;
+    }
 
     #command-preview {
         background: #1d2021;
@@ -1629,6 +1635,7 @@ class LlamaConfigApp(App):
                 
                 with Horizontal(id="preview-header"):
                     yield Label("LIVE BASH COMMAND PREVIEW:", id="preview-title")
+                    yield Label("Double-click inside to select launch command", id="preview-hint")
                 yield Static("", id="command-preview")
 
         with Vertical(id="buttons"):
