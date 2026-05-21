@@ -893,7 +893,9 @@ class LlamaConfigApp(App):
         text-style: bold;
     }
     ToastRack {
-        dock: none;
+        position: absolute;
+        left: 0;
+        top: 0;
         layer: _toast;
         align: center middle;
         width: 100%;
