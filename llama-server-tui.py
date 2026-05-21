@@ -951,11 +951,15 @@ class LlamaConfigApp(App):
         background: #1d2021;
     }
     #dashboard-collapsible {
-        margin-bottom: 1;
-        margin-right: 2;
+        dock: bottom;
+        margin: 0;
+        padding: 0 2;
+        background: #282828;
+        border-top: solid #3c3836;
+        height: auto;
     }
     #dashboard-content {
-        padding: 0 1;
+        padding: 1 2;
         background: #282828;
         height: auto;
         layout: vertical;
@@ -1010,8 +1014,6 @@ class LlamaConfigApp(App):
         color: #ebdbb2;
         padding: 0 1;
         height: auto;
-        min-height: 2;
-        max-height: 8;
         border: solid #3c3836;
         margin-top: 0;
         width: 100%;
@@ -1410,18 +1412,6 @@ class LlamaConfigApp(App):
         ]
 
         with VerticalScroll(id="main-scroll"):
-            with Collapsible(title="📊 Real-Time Dashboard", id="dashboard-collapsible", collapsed=False):
-                with Container(id="dashboard-content"):
-                    with Horizontal(id="vram-meter-container"):
-                        yield Label("EST VRAM USAGE: ", id="vram-title")
-                        yield Label("0.0 GB / 24 GB (0%)", id="vram-text")
-                    yield Label("[░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░]", id="vram-bar")
-                    
-                    with Horizontal(id="preview-header"):
-                        yield Label("LIVE BASH COMMAND PREVIEW:", id="preview-title")
-                        yield Button("Copy Code", id="btn-copy-code")
-                    yield Static("", id="command-preview")
-
             for title, fields in sections:
                 with Collapsible(title=title, collapsed=False):
                     with Container(classes="grid-container"):
@@ -1435,6 +1425,18 @@ class LlamaConfigApp(App):
                                 is_mandatory=is_mandatory,
                                 is_enabled=is_enabled
                             )
+
+        with Collapsible(title="📊 Real-Time Dashboard", id="dashboard-collapsible", collapsed=False):
+            with Container(id="dashboard-content"):
+                with Horizontal(id="vram-meter-container"):
+                    yield Label("EST VRAM USAGE: ", id="vram-title")
+                    yield Label("0.0 GB / 24 GB (0%)", id="vram-text")
+                yield Label("[░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░]", id="vram-bar")
+                
+                with Horizontal(id="preview-header"):
+                    yield Label("LIVE BASH COMMAND PREVIEW:", id="preview-title")
+                    yield Button("Copy Code", id="btn-copy-code")
+                yield Static("", id="command-preview")
 
         with Horizontal(id="buttons"):
             yield Button("Load Profile", id="btn-load-profile", variant="default")
@@ -1605,8 +1607,16 @@ class LlamaConfigApp(App):
         return params
 
     def calculate_vram_estimate(self, params: dict[str, str]) -> tuple[float, int]:
-        # Estimate model weights memory: 27B model quantized Q4 is roughly 16.5GB
+        # Estimate model weights memory: dynamically read from GGUF size if available, otherwise fallback
         base_vram = 16.5
+        model_path = params.get("MODEL", "")
+        if model_path:
+            model_path = os.path.expanduser(model_path)
+            if os.path.isfile(model_path):
+                try:
+                    base_vram = os.path.getsize(model_path) / (1024 ** 3)
+                except Exception:
+                    base_vram = 16.5
         
         # NGL offload layers
         ngl = 0
@@ -1632,18 +1642,37 @@ class LlamaConfigApp(App):
         if "FLASH_ATTN" in params:
             use_flash_attn = params["FLASH_ATTN"] != "off"
             
-        # KV Cache key type
-        cache_k = "q8_0"
-        if "CACHE_K" in params:
-            cache_k = params["CACHE_K"]
+        # KV Cache key and value types
+        def get_multiplier(cache_type: str) -> float:
+            cache_type = cache_type.lower()
+            if cache_type == "f16":
+                return 1.0
+            elif cache_type == "f32":
+                return 2.0
+            elif cache_type == "q8_0":
+                return 0.5
+            elif cache_type in ("q4_0", "q4_1", "q4_k_m", "q4_k_s", "q4_2"):
+                return 0.25
+            elif cache_type in ("q5_0", "q5_1", "q5_k_m", "q5_k_s"):
+                return 0.3125
+            return 1.0
+
+        cache_k = params.get("CACHE_K", "f16")
+        cache_v = params.get("CACHE_V", "f16")
+        
+        mult_k = get_multiplier(cache_k)
+        mult_v = get_multiplier(cache_v)
+        cache_multiplier = (mult_k + mult_v) / 2.0
             
-        cache_multiplier = 1.0
-        if cache_k == "q8_0":
-            cache_multiplier = 0.5
-        elif cache_k in ("q4_0", "q4_1", "q4_k_m", "q4_k_s"):
-            cache_multiplier = 0.25
-            
-        kv_memory = (ctx * 0.00015) * cache_multiplier
+        # Dynamic KV cache coefficient based on base_vram (model size / parameter count proxy)
+        if base_vram < 7.0:  # ~7B/8B models
+            kv_coeff = 0.000035
+        elif base_vram < 20.0:  # ~14B/27B models
+            kv_coeff = 0.00007
+        else:  # ~70B/72B models
+            kv_coeff = 0.00009
+
+        kv_memory = (ctx * kv_coeff) * cache_multiplier
         if not use_flash_attn:
             kv_memory *= 1.4
             
@@ -1657,8 +1686,13 @@ class LlamaConfigApp(App):
         if "MMPROJ" in params and params["MMPROJ"].strip():
             vision_projector_overhead = 0.8
             
-        total_estimate = weights_on_gpu + kv_memory + speculator_overhead + vision_projector_overhead
-        total_estimate = min(max(total_estimate, 0.0), 32.0)
+        # CUDA context initialization overhead
+        cuda_overhead = 0.0
+        if ngl > 0:
+            cuda_overhead = 0.8
+            
+        total_estimate = weights_on_gpu + kv_memory + speculator_overhead + vision_projector_overhead + cuda_overhead
+        total_estimate = min(max(total_estimate, 0.0), 48.0)
         
         percentage = round((total_estimate / 24.0) * 100)
         return total_estimate, percentage
