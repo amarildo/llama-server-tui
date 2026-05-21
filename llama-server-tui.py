@@ -913,7 +913,7 @@ class DeleteProfileModal(ModalScreen[None]):
                     name = f[:-5]
                     if name != "default":
                         custom_profiles_count += 1
-                        lbl = Label(f"📄 {name}", classes="dp-entry", id=f"lbl-dp-{name}")
+                        lbl = Label(f"📄 {name}", classes="dp-entry")
                         lbl.profile_name = name
                         yield lbl
             if custom_profiles_count == 0:
