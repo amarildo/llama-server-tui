@@ -268,7 +268,7 @@ class FileBrowserModal(ModalScreen[str]):
     #file-browser-container {
         width: 90;
         height: 30;
-        background: #504945;
+        background: #282828;
         border: thick #fabd2f;
         padding: 1 2;
     }
@@ -276,32 +276,32 @@ class FileBrowserModal(ModalScreen[str]):
         text-align: center;
         color: #fabd2f;
         text-style: bold;
-        background: #504945;
+        background: #282828;
         width: 100%;
         height: 1;
         margin-bottom: 1;
     }
     #fb-path {
         color: #83a598;
-        background: #504945;
+        background: #282828;
         width: 100%;
         height: 1;
         margin-bottom: 1;
     }
     #fb-file-list {
         height: 1fr;
-        background: #3c3836;
+        background: #1d2021;
         padding: 0 1;
     }
     .fb-entry {
         width: 100%;
         height: 1;
-        background: #3c3836;
+        background: #1d2021;
         color: #ebdbb2;
         padding: 0 1;
     }
     .fb-entry:hover {
-        background: #504945;
+        background: #3c3836;
     }
     .fb-entry-dir {
         color: #fabd2f;
@@ -317,7 +317,7 @@ class FileBrowserModal(ModalScreen[str]):
         height: auto;
         align: center middle;
         margin-top: 1;
-        background: #504945;
+        background: #282828;
     }
     #fb-buttons Button {
         margin: 0 1;
@@ -568,7 +568,7 @@ class ConfirmDeleteModal(ModalScreen[bool]):
     #confirm-container {
         width: 50;
         height: 11;
-        background: #3c3836;
+        background: #282828;
         border: thick #fb4934;
         padding: 1 2;
         align: center middle;
@@ -579,19 +579,19 @@ class ConfirmDeleteModal(ModalScreen[bool]):
         text-align: center;
         width: 100%;
         margin-bottom: 1;
-        background: #3c3836;
+        background: #282828;
     }
     #confirm-message {
         color: #ebdbb2;
         text-align: center;
         width: 100%;
         margin-bottom: 1;
-        background: #3c3836;
+        background: #282828;
     }
     #confirm-buttons {
         align: center middle;
         height: auto;
-        background: #3c3836;
+        background: #282828;
     }
     #confirm-buttons Button {
         margin: 0 1;
@@ -646,7 +646,7 @@ class LoadProfileModal(ModalScreen[str]):
     #load-profile-container {
         width: 50;
         height: 20;
-        background: #3c3836;
+        background: #282828;
         border: thick #fabd2f;
         padding: 1 2;
         align: center middle;
@@ -657,11 +657,11 @@ class LoadProfileModal(ModalScreen[str]):
         text-align: center;
         width: 100%;
         margin-bottom: 1;
-        background: #3c3836;
+        background: #282828;
     }
     #lp-list {
         height: 1fr;
-        background: #282828;
+        background: #1d2021;
         padding: 0 1;
         width: 100%;
         margin-bottom: 1;
@@ -670,7 +670,7 @@ class LoadProfileModal(ModalScreen[str]):
         layout: horizontal;
         height: 1;
         align: left middle;
-        background: #282828;
+        background: #1d2021;
         width: 100%;
         margin-bottom: 0;
     }
@@ -707,7 +707,7 @@ class LoadProfileModal(ModalScreen[str]):
     #lp-buttons {
         align: center middle;
         height: auto;
-        background: #3c3836;
+        background: #282828;
     }
     #lp-buttons Button {
         margin: 0 1;
@@ -814,7 +814,7 @@ class AlertModal(ModalScreen[None]):
     #alert-container {
         width: 50;
         height: 11;
-        background: #3c3836;
+        background: #282828;
         border: thick #fabd2f;
         padding: 1 2;
         align: center middle;
@@ -825,19 +825,19 @@ class AlertModal(ModalScreen[None]):
         text-align: center;
         width: 100%;
         margin-bottom: 1;
-        background: #3c3836;
+        background: #282828;
     }
     #alert-message {
         color: #ebdbb2;
         text-align: center;
         width: 100%;
         margin-bottom: 1;
-        background: #3c3836;
+        background: #282828;
     }
     #alert-buttons {
         align: center middle;
         height: auto;
-        background: #3c3836;
+        background: #282828;
     }
     #btn-alert-ok {
         background: #fabd2f;
@@ -885,13 +885,13 @@ class LlamaConfigApp(App):
     ENABLE_COMMAND_PALETTE = False
 
     CSS = """
-    $surface: #282828;
-    $boost: #282828;
+    $surface: #1d2021;
+    $boost: #1d2021;
     $panel: #282828;
-    $background: #282828;
+    $background: #1d2021;
 
     Screen {
-        background: #282828;
+        background: #1d2021;
         padding: 0;
         margin: 0;
         border: none;
@@ -910,7 +910,7 @@ class LlamaConfigApp(App):
         dock: top;
         width: 100%;
         height: 1;
-        background: #3c3836;
+        background: #282828;
         color: #fabd2f;
         text-align: center;
         text-style: bold;
@@ -924,60 +924,83 @@ class LlamaConfigApp(App):
     }
     #main-scroll {
         padding: 1 2;
-        background: $surface;
+        background: #1d2021;
     }
     Input:focus {
         background: #fabd2f;
-        color: $surface;
+        color: #1d2021;
     }
     Select:focus SelectCurrent, SelectCurrent:focus {
         background: #fabd2f;
-        color: $surface;
+        color: #1d2021;
     }
     Label {
         color: #ebdbb2;
         text-style: bold;
     }
-    .custom-checkbox {
-        background: $surface;
-        color: #fabd2f;
+    ParameterField .custom-checkbox {
+        background: #1d2021;
+        color: #fb4934;
         text-style: bold;
         width: 3;
         margin-right: 1;
         content-align: center middle;
     }
+    ParameterField:not(.dimmed) .custom-checkbox {
+        color: #b8bb26;
+    }
     .custom-checkbox:hover {
-        color: #fbf1c7;
+        background: #3c3836;
     }
     Button {
         margin: 2 2;
         background: #3c3836;
         color: #ebdbb2;
         border: none;
-    }
-    Button:hover {
-        background: #fe8019;
-        color: $surface;
-    }
-    #btn-start {
-        background: #fabd2f;
-        color: $surface;
         text-style: bold;
     }
-    #btn-start:hover {
-        background: #fe8019;
+    Button:hover {
+        background: #504945;
+        color: #fbf1c7;
     }
     #buttons {
         dock: bottom;
         align: center middle;
         height: 4;
-        background: $surface;
+        background: #1d2021;
         border-top: solid #3c3836;
     }
     #buttons Button {
         margin: 0 2;
         height: 1;
         min-height: 0;
+    }
+    #btn-load-profile {
+        background: #458588;
+        color: #fbf1c7;
+        text-style: bold;
+    }
+    #btn-load-profile:hover {
+        background: #83a598;
+        color: #1d2021;
+    }
+    #btn-save-profile {
+        background: #d65d0e;
+        color: #fbf1c7;
+        text-style: bold;
+    }
+    #btn-save-profile:hover {
+        background: #fe8019;
+        color: #1d2021;
+    }
+    #btn-start {
+        background: #b8bb26;
+        color: #1d2021;
+        text-style: bold;
+    }
+    #btn-start:hover {
+        background: #8ec07c;
+        color: #1d2021;
     }
     .grid-container {
         layout: grid;
@@ -987,17 +1010,17 @@ class LlamaConfigApp(App):
         grid-columns: 1fr 1fr;
         grid-rows: auto;
         grid-gutter: 1 6;
-        background: $surface;
+        background: #1d2021;
     }
     ParameterField {
         layout: horizontal;
         height: 1;
         align: left middle;
-        background: $surface;
+        background: #282828;
     }
     .field-label {
         width: 25;
-        background: $surface;
+        background: #282828;
     }
     Input {
         width: 1fr;
@@ -1026,20 +1049,24 @@ class LlamaConfigApp(App):
     .spacer-checkbox {
         width: 3;
         margin-right: 1;
-        background: $surface;
+        background: #282828;
     }
     Collapsible {
         margin-right: 2;
+        margin-bottom: 1;
+        background: #282828;
+        border: solid #3c3836;
+        padding: 0 1;
     }
     Collapsible, CollapsibleTitle, Contents {
-        background: $surface;
+        background: #282828;
     }
     Collapsible:focus, CollapsibleTitle:focus, CollapsibleTitle:hover, Collapsible:focus-within, Collapsible.-expanded {
-        background: $surface;
+        background: #282828;
         background-tint: transparent;
     }
     Collapsible > Contents {
-        background: $surface;
+        background: #282828;
     }
     CollapsibleTitle {
         margin: 0 0 1 0;
@@ -1052,19 +1079,20 @@ class LlamaConfigApp(App):
         padding: 0;
         margin: 0;
         height: auto;
+        background: #282828;
     }
     .dimmed {
         opacity: 0.3;
     }
     .info-icon {
         width: 3;
-        color: #504945;
+        color: #a89984;
         background: transparent;
         text-style: bold;
         content-align: center middle;
     }
     .info-icon:hover {
-        color: #928374;
+        color: #83a598;
     }
     .browse-btn {
         min-width: 4;
@@ -1073,12 +1101,13 @@ class LlamaConfigApp(App):
         margin: 0 0 0 1;
         padding: 0;
         background: #3c3836;
-        color: #fabd2f;
+        color: #8ec07c;
         border: none;
+        text-style: bold;
     }
     .browse-btn:hover {
-        background: #fe8019;
-        color: #282828;
+        background: #8ec07c;
+        color: #1d2021;
     }
     Tooltip {
         background: #504945;
@@ -1089,15 +1118,15 @@ class LlamaConfigApp(App):
         max-width: 50;
     }
     Toast {
-        background: #3c3836;
-        color: #ebdbb2;
-        border-left: thick #fabd2f;
+        background: #282828;
+        color: #fbf1c7;
+        border: solid #fabd2f;
         padding: 1 2;
         height: auto;
         min-height: 3;
     }
     Toast:hover {
-        background: #504945;
+        background: #3c3836;
     }
     Toast .toast--title {
         color: #fabd2f;
