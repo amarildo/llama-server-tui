@@ -19,11 +19,11 @@ LLamaLauncherTui is a keyboard-driven terminal interface designed to simplify la
 
 ## Features
 
-**Gruvbox Styling:** A dark theme interface styled with custom HSL color tokens, compatible with other terminal themes (such as Dracula).
-**Speculative Decoding (MTP) Support:** Full, native configuration parameters for Qwen 3.6 Multi-Token Prediction (MTP) draft-heads, allowing you to fine-tune `spec-draft-n-max` and probabilities.
-**Smart Prefix Cache Re-use:** Configurable dynamic prefix prompt caching (`--cache-prompt`) and re-use token bounds (`--cache-reuse`), boosting multi-turn agent chat throughput by up to 22%.
-**RTX 4090 Hardware Presets:** Pre-calibrated advanced VRAM configuration keys, including `MERGE_QKV`, `MERGE_EXPERTS` (expert matrix merging to conserve VRAM), and smart context checkpoints for massive (>100K) sequences.
-**Config Toggle Persistence:** Safely uncheck any hardware or sampling parameter inside the UI. Your enabled/disabled states are stored persistently inside `config.json` via a strict `"DISABLED_FIELDS"` key.
+**Gruvbox Styling:** A dark theme interface styled with custom HSL color tokens, compatible with other terminal themes (such as Dracula).\
+**Speculative Decoding (MTP) Support:** Full, native configuration parameters for Qwen 3.6 Multi-Token Prediction (MTP) draft-heads, allowing you to fine-tune `spec-draft-n-max` and probabilities.\
+**Smart Prefix Cache Re-use:** Configurable dynamic prefix prompt caching (`--cache-prompt`) and re-use token bounds (`--cache-reuse`), boosting multi-turn agent chat throughput by up to 22%.\
+**RTX 4090 Hardware Presets:** Pre-calibrated advanced VRAM configuration keys, including `MERGE_QKV`, `MERGE_EXPERTS` (expert matrix merging to conserve VRAM), and smart context checkpoints for massive (>100K) sequences.\
+**Config Toggle Persistence:** Safely uncheck any hardware or sampling parameter inside the UI. Your enabled/disabled states are stored persistently inside `config.json` via a strict `"DISABLED_FIELDS"` key.\
 **Integrated Modal File Browser:** Easily browse and select models (`.gguf`), servers, custom templates, and visual projectors with a single click.
 
 ---
