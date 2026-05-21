@@ -221,33 +221,38 @@ class ParameterField(Horizontal):
         elif self.key == "CHAT_TEMPLATE_FILE":
             yield Button("📂", id="btn-browse-template", classes="browse-btn")
 
+    def watch_enabled(self, enabled: bool) -> None:
+        self.update_visuals()
+
+    def update_visuals(self) -> None:
+        if not self.is_mounted:
+            return
+        if not self.is_mandatory:
+            try:
+                chk = self.query_one(f"#chk-{self.key}", Label)
+                chk.update(" ✔ " if self.enabled else " ✖ ")
+            except Exception:
+                pass
+            if self.enabled:
+                self.remove_class("dimmed")
+            else:
+                self.add_class("dimmed")
+            try:
+                if self.key in SELECT_OPTIONS:
+                    self.query_one(Select).disabled = not self.enabled
+                else:
+                    self.query_one(Input).disabled = not self.enabled
+            except Exception:
+                pass
+
     def on_mount(self) -> None:
         self.enabled = self._initial_enabled
-        if not self.is_mandatory:
-            chk = self.query_one(f"#chk-{self.key}", Label)
-            chk.update(" ✔ " if self.enabled else " ✖ ")
-            if self.enabled:
-                self.remove_class("dimmed")
-            else:
-                self.add_class("dimmed")
-            if self.key in SELECT_OPTIONS:
-                self.query_one(Select).disabled = not self.enabled
-            else:
-                self.query_one(Input).disabled = not self.enabled
+        self.update_visuals()
 
     def on_click(self, event) -> None:
-        if not self.is_mandatory and event.control.id == f"chk-{self.key}":
+        if not self.is_mandatory and hasattr(event, "control") and event.control and event.control.id == f"chk-{self.key}":
             self.enabled = not self.enabled
-            chk = self.query_one(f"#chk-{self.key}", Label)
-            chk.update(" ✔ " if self.enabled else " ✖ ")
-            if self.enabled:
-                self.remove_class("dimmed")
-            else:
-                self.add_class("dimmed")
-            if self.key in SELECT_OPTIONS:
-                self.query_one(Select).disabled = not self.enabled
-            else:
-                self.query_one(Input).disabled = not self.enabled
+
 
 
 class FileBrowserModal(ModalScreen[str]):
@@ -399,6 +404,201 @@ class FileBrowserModal(ModalScreen[str]):
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "btn-fb-cancel":
+            self.dismiss("")
+
+    def action_cancel(self) -> None:
+        self.dismiss("")
+
+
+class SaveProfileModal(ModalScreen[str]):
+    """Modal input dialog for saving a profile as a name."""
+
+    BINDINGS = [("escape", "cancel", "Cancel")]
+
+    DEFAULT_CSS = """
+    SaveProfileModal {
+        align: center middle;
+        background: #000000 60%;
+    }
+    #save-profile-container {
+        width: 50;
+        height: 13;
+        background: #3c3836;
+        border: thick #fabd2f;
+        padding: 1 2;
+        align: center middle;
+    }
+    #sp-title {
+        color: #fabd2f;
+        text-style: bold;
+        text-align: center;
+        width: 100%;
+        margin-bottom: 1;
+        background: #3c3836;
+    }
+    #sp-label {
+        color: #ebdbb2;
+        width: 100%;
+        margin-bottom: 1;
+        background: #3c3836;
+    }
+    #sp-input {
+        width: 100%;
+        background: #504945;
+        border: none;
+        color: #ebdbb2;
+        padding: 0 1;
+        height: 1;
+        margin-bottom: 1;
+    }
+    #sp-buttons {
+        align: center middle;
+        height: auto;
+        margin-top: 1;
+        background: #3c3836;
+    }
+    #sp-buttons Button {
+        margin: 0 1;
+        min-width: 12;
+    }
+    #btn-sp-cancel {
+        background: #665c54;
+        color: #ebdbb2;
+    }
+    #btn-sp-save {
+        background: #fabd2f;
+        color: #282828;
+        text-style: bold;
+    }
+    """
+
+    def __init__(self, current_name: str = "default"):
+        super().__init__()
+        self.current_name = current_name
+
+    def compose(self) -> ComposeResult:
+        with Container(id="save-profile-container"):
+            yield Static("💾 Save Profile As", id="sp-title")
+            yield Label("Enter profile name:", id="sp-label")
+            yield Input(value=self.current_name, id="sp-input")
+            with Horizontal(id="sp-buttons"):
+                yield Button("Cancel", id="btn-sp-cancel")
+                yield Button("Save", id="btn-sp-save")
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "btn-sp-cancel":
+            self.dismiss("")
+        elif event.button.id == "btn-sp-save":
+            self.submit()
+
+    def on_input_submitted(self, event: Input.Submitted) -> None:
+        self.submit()
+
+    def submit(self) -> None:
+        val = self.query_one("#sp-input", Input).value.strip()
+        safe_val = "".join(c for c in val if c.isalnum() or c in ("-", "_")).strip()
+        if safe_val:
+            self.dismiss(safe_val)
+        else:
+            self.dismiss("")
+
+    def action_cancel(self) -> None:
+        self.dismiss("")
+
+
+class LoadProfileModal(ModalScreen[str]):
+    """Modal dialog to list and select profiles."""
+
+    BINDINGS = [("escape", "cancel", "Cancel")]
+
+    DEFAULT_CSS = """
+    LoadProfileModal {
+        align: center middle;
+        background: #000000 60%;
+    }
+    #load-profile-container {
+        width: 50;
+        height: 20;
+        background: #3c3836;
+        border: thick #fabd2f;
+        padding: 1 2;
+        align: center middle;
+    }
+    #lp-title {
+        color: #fabd2f;
+        text-style: bold;
+        text-align: center;
+        width: 100%;
+        margin-bottom: 1;
+        background: #3c3836;
+    }
+    #lp-list {
+        height: 1fr;
+        background: #282828;
+        padding: 0 1;
+        width: 100%;
+        margin-bottom: 1;
+    }
+    .lp-entry {
+        width: 100%;
+        height: 1;
+        background: #282828;
+        color: #ebdbb2;
+        padding: 0 1;
+    }
+    .lp-entry:hover {
+        background: #504945;
+        color: #fabd2f;
+        text-style: bold;
+    }
+    #lp-buttons {
+        align: center middle;
+        height: auto;
+        background: #3c3836;
+    }
+    #lp-buttons Button {
+        margin: 0 1;
+        min-width: 12;
+    }
+    #btn-lp-cancel {
+        background: #665c54;
+        color: #ebdbb2;
+    }
+    """
+
+    def __init__(self, profiles_dir: str):
+        super().__init__()
+        self.profiles_dir = profiles_dir
+
+    def compose(self) -> ComposeResult:
+        with Container(id="load-profile-container"):
+            yield Static("📂 Load Profile", id="lp-title")
+            with VerticalScroll(id="lp-list"):
+                yield from self._build_entries()
+            with Horizontal(id="lp-buttons"):
+                yield Button("Cancel", id="btn-lp-cancel")
+
+    def _build_entries(self):
+        try:
+            files = sorted(os.listdir(self.profiles_dir))
+            for f in files:
+                if f.endswith(".json"):
+                    name = f[:-5]
+                    lbl = Label(f"📄 {name}", classes="lp-entry")
+                    lbl.profile_name = name
+                    yield lbl
+        except Exception:
+            yield Label("⚠ Failed to load profiles", classes="lp-entry")
+
+    def on_click(self, event) -> None:
+        widget = event.control if hasattr(event, 'control') else None
+        if widget is None or not isinstance(widget, Label):
+            return
+        if hasattr(widget, "profile_name"):
+            self.dismiss(widget.profile_name)
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "btn-lp-cancel":
             self.dismiss("")
 
     def action_cancel(self) -> None:
@@ -703,31 +903,40 @@ class LlamaConfigApp(App):
         self.config = DEFAULT_CONFIG.copy()
         self.should_start = False
         self.enabled_fields = {}
+        
+        # Ensure profiles directory exists
+        self.profiles_dir = os.path.join(CONFIG_DIR, "profiles")
+        os.makedirs(self.profiles_dir, exist_ok=True)
+        self.active_profile = "default"
+        
+        # Load initial config
         if os.path.exists(CONFIG_FILE):
             try:
                 with open(CONFIG_FILE, "r") as f:
                     loaded = json.load(f)
                     self.config.update(loaded)
-                    if "DISABLED_FIELDS" in loaded:
-                        disabled = loaded["DISABLED_FIELDS"]
-                    else:
-                        # Old config file: default DRY and XTC to disabled
-                        disabled = [
-                            "DRY_MULTIPLIER", "DRY_BASE", "DRY_ALLOWED_LENGTH", "DRY_PENALTY_LAST_N",
-                            "XTC_PROBABILITY", "XTC_THRESHOLD"
-                        ]
-                    for k in DEFAULT_CONFIG:
-                        self.enabled_fields[k] = k not in disabled
+                    self.active_profile = loaded.get("ACTIVE_PROFILE", "default")
             except Exception:
                 pass
-        else:
-            # Default DRY and XTC to disabled out of the box
-            default_disabled = [
+        
+        # Initialize default.json profile if it doesn't exist
+        default_profile_path = os.path.join(self.profiles_dir, "default.json")
+        if not os.path.exists(default_profile_path):
+            try:
+                with open(default_profile_path, "w") as f:
+                    json.dump(self.config, f, indent=4)
+            except Exception:
+                pass
+                
+        # Determine enabled fields
+        disabled = self.config.get("DISABLED_FIELDS", [])
+        if not disabled and not os.path.exists(CONFIG_FILE):
+            disabled = [
                 "DRY_MULTIPLIER", "DRY_BASE", "DRY_ALLOWED_LENGTH", "DRY_PENALTY_LAST_N",
                 "XTC_PROBABILITY", "XTC_THRESHOLD"
             ]
-            for k in DEFAULT_CONFIG:
-                self.enabled_fields[k] = k not in default_disabled
+        for k in DEFAULT_CONFIG:
+            self.enabled_fields[k] = k not in disabled
 
     def get_css_variables(self) -> dict[str, str]:
         variables = super().get_css_variables()
@@ -852,13 +1061,21 @@ class LlamaConfigApp(App):
                             )
 
         with Horizontal(id="buttons"):
-            yield Button("Save Default", id="btn-save", variant="primary")
+            yield Button("Load Profile", id="btn-load-profile", variant="default")
+            yield Button("Save As...", id="btn-save-profile", variant="primary")
             yield Button("Start Server", id="btn-start", variant="success")
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
-        if event.button.id == "btn-save":
-            self.save_config()
-            self.push_screen(AlertModal("Success", "Configuration saved to config.json"))
+        if event.button.id == "btn-load-profile":
+            self.push_screen(
+                LoadProfileModal(profiles_dir=self.profiles_dir),
+                callback=self._on_profile_loaded
+            )
+        elif event.button.id == "btn-save-profile":
+            self.push_screen(
+                SaveProfileModal(current_name=self.active_profile),
+                callback=self._on_profile_saved_as
+            )
         elif event.button.id == "btn-start":
             self.save_config()
             self.should_start = True
@@ -904,16 +1121,78 @@ class LlamaConfigApp(App):
         if path:
             self.query_one("#CHAT_TEMPLATE_FILE", Input).value = path
 
+    def _on_profile_loaded(self, profile_name: str) -> None:
+        if profile_name:
+            profile_path = os.path.join(self.profiles_dir, f"{profile_name}.json")
+            if os.path.exists(profile_path):
+                try:
+                    with open(profile_path, "r") as f:
+                        data = json.load(f)
+                    self.load_profile_data(data)
+                    self.active_profile = profile_name
+                    self.save_config()  # Dual-saves to update ACTIVE_PROFILE in config.json
+                    self.notify(f"Profile '{profile_name}' loaded successfully", severity="information")
+                except Exception as e:
+                    self.notify(f"Error loading profile: {e}", severity="error")
+
+    def _on_profile_saved_as(self, profile_name: str) -> None:
+        if profile_name:
+            self.active_profile = profile_name
+            self.save_config()  # Dual-saves to both config.json and the new profile
+            self.notify(f"Profile saved as '{profile_name}'", severity="information")
+
+    def load_profile_data(self, data: dict) -> None:
+        self.config.update(data)
+        disabled = data.get("DISABLED_FIELDS", [])
+        try:
+            fields = list(self.query(ParameterField))
+        except Exception:
+            fields = []
+
+        if fields:
+            for field in fields:
+                if field.key in data:
+                    field.value = str(data[field.key])
+                field.enabled = field.key not in disabled
+        else:
+            for k in DEFAULT_CONFIG:
+                self.enabled_fields[k] = k not in disabled
+
     def save_config(self):
         disabled = []
-        for field in self.query(ParameterField):
-            self.config[field.key] = field.value
-            self.enabled_fields[field.key] = field.enabled
-            if not field.enabled:
-                disabled.append(field.key)
-        self.config["DISABLED_FIELDS"] = disabled
+        try:
+            fields = list(self.query(ParameterField))
+        except Exception:
+            fields = []
+
+        if fields:
+            for field in fields:
+                self.config[field.key] = field.value
+                self.enabled_fields[field.key] = field.enabled
+                if not field.enabled:
+                    disabled.append(field.key)
+            self.config["DISABLED_FIELDS"] = disabled
+        else:
+            self.config["DISABLED_FIELDS"] = [k for k, enabled in self.enabled_fields.items() if not enabled]
+
+        self.config["ACTIVE_PROFILE"] = self.active_profile
+        
+        # Save active session config
         with open(CONFIG_FILE, "w") as f:
             json.dump(self.config, f, indent=4)
+            
+        # Save to current active profile JSON
+        profile_path = os.path.join(self.profiles_dir, f"{self.active_profile}.json")
+        try:
+            with open(profile_path, "w") as f:
+                json.dump(self.config, f, indent=4)
+        except Exception as e:
+            try:
+                self.notify(f"Failed to save profile file: {e}", severity="error")
+            except Exception:
+                pass
+
+
 
 if __name__ == "__main__":
     app = LlamaConfigApp()

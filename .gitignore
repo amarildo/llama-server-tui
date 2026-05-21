@@ -1,5 +1,7 @@
 # Local server configurations containing personal absolute paths and IP configurations
 config.json
+profiles/
+
 
 # Local GitHub publishing utility
 push_to_github.py
