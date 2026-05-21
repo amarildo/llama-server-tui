@@ -940,14 +940,14 @@ class LlamaConfigApp(App):
     }
     ParameterField .custom-checkbox {
         background: #1d2021;
-        color: #fb4934;
+        color: #b8bb26;
         text-style: bold;
         width: 3;
         margin-right: 1;
         content-align: center middle;
     }
-    ParameterField:not(.dimmed) .custom-checkbox {
-        color: #b8bb26;
+    ParameterField.dimmed .custom-checkbox {
+        color: #fb4934;
     }
     .custom-checkbox:hover {
         background: #3c3836;
