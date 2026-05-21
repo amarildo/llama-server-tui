@@ -387,7 +387,12 @@ class FileBrowserModal(ModalScreen[str]):
             with VerticalScroll(id="fb-file-list"):
                 yield from self._build_entries()
             with Horizontal(id="fb-buttons"):
-                yield Button("Cancel", id="btn-fb-cancel")
+                btn_cancel = Button("Cancel", id="btn-fb-cancel")
+                btn_cancel.styles.height = 1
+                btn_cancel.styles.min_height = 0
+                btn_cancel.styles.border = ("none", "transparent")
+                btn_cancel.styles.margin = (0, 1, 0, 1)
+                yield btn_cancel
 
     def _build_entries(self):
         """Build file/dir labels for current directory."""
@@ -517,7 +522,7 @@ class SaveProfileModal(ModalScreen[str]):
     }
     #sp-buttons {
         align: center middle;
-        height: auto;
+        height: 1;
         margin-top: 1;
         background: #282828;
     }
@@ -565,8 +570,15 @@ class SaveProfileModal(ModalScreen[str]):
             yield Label("Or enter new profile name:", id="sp-label")
             yield Input(value=self.current_name, id="sp-input")
             with Horizontal(id="sp-buttons"):
-                yield Button("Cancel", id="btn-sp-cancel")
-                yield Button("Save", id="btn-sp-save")
+                btn_cancel = Button("Cancel", id="btn-sp-cancel")
+                btn_save = Button("Save", id="btn-sp-save")
+                for btn in (btn_cancel, btn_save):
+                    btn.styles.height = 1
+                    btn.styles.min_height = 0
+                    btn.styles.border = ("none", "transparent")
+                    btn.styles.margin = (0, 1, 0, 1)
+                yield btn_cancel
+                yield btn_save
 
     def on_select_changed(self, event: Select.Changed) -> None:
         if event.value:
@@ -632,7 +644,7 @@ class ConfirmDeleteModal(ModalScreen[bool]):
     }
     #confirm-buttons {
         align: center middle;
-        height: auto;
+        height: 1;
         background: #282828;
     }
     #confirm-buttons Button {
@@ -662,8 +674,15 @@ class ConfirmDeleteModal(ModalScreen[bool]):
             yield Static("⚠ Confirm Delete", id="confirm-title")
             yield Static(f"Are you sure you want to delete profile '{self.profile_name}'?", id="confirm-message")
             with Horizontal(id="confirm-buttons"):
-                yield Button("Yes, Delete", id="btn-confirm-yes")
-                yield Button("No", id="btn-confirm-no")
+                btn_yes = Button("Yes, Delete", id="btn-confirm-yes")
+                btn_no = Button("No", id="btn-confirm-no")
+                for btn in (btn_yes, btn_no):
+                    btn.styles.height = 1
+                    btn.styles.min_height = 0
+                    btn.styles.border = ("none", "transparent")
+                    btn.styles.margin = (0, 1, 0, 1)
+                yield btn_yes
+                yield btn_no
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "btn-confirm-yes":
@@ -724,7 +743,7 @@ class LoadProfileModal(ModalScreen[str]):
     }
     #lp-buttons {
         align: center middle;
-        height: auto;
+        height: 1;
         background: #282828;
     }
     #lp-buttons Button {
@@ -750,7 +769,12 @@ class LoadProfileModal(ModalScreen[str]):
             with VerticalScroll(id="lp-list"):
                 yield from self._build_entries()
             with Horizontal(id="lp-buttons"):
-                yield Button("Cancel", id="btn-lp-cancel")
+                btn_cancel = Button("Cancel", id="btn-lp-cancel")
+                btn_cancel.styles.height = 1
+                btn_cancel.styles.min_height = 0
+                btn_cancel.styles.border = ("none", "transparent")
+                btn_cancel.styles.margin = (0, 1, 0, 1)
+                yield btn_cancel
 
     def _build_entries(self):
         try:
@@ -830,7 +854,7 @@ class DeleteProfileModal(ModalScreen[None]):
     }
     #dp-buttons {
         align: center middle;
-        height: auto;
+        height: 1;
         background: #282828;
     }
     #dp-buttons Button {
@@ -870,8 +894,15 @@ class DeleteProfileModal(ModalScreen[None]):
             with VerticalScroll(id="dp-list"):
                 yield from self._build_entries()
             with Horizontal(id="dp-buttons"):
-                yield Button("Cancel", id="btn-dp-cancel")
-                yield Button("Delete", id="btn-dp-delete", variant="error", disabled=True)
+                btn_cancel = Button("Cancel", id="btn-dp-cancel")
+                btn_delete = Button("Delete", id="btn-dp-delete", variant="error", disabled=True)
+                for btn in (btn_cancel, btn_delete):
+                    btn.styles.height = 1
+                    btn.styles.min_height = 0
+                    btn.styles.border = ("none", "transparent")
+                    btn.styles.margin = (0, 1, 0, 1)
+                yield btn_cancel
+                yield btn_delete
 
     def _build_entries(self):
         try:
@@ -1000,7 +1031,7 @@ class AlertModal(ModalScreen[None]):
     }
     #alert-buttons {
         align: center middle;
-        height: auto;
+        height: 1;
         background: #282828;
     }
     #btn-alert-ok {
@@ -1030,7 +1061,12 @@ class AlertModal(ModalScreen[None]):
             yield Static(f"✨ {self.title_text} ✨", id="alert-title")
             yield Static(self.message_text, id="alert-message")
             with Horizontal(id="alert-buttons"):
-                yield Button("OK", id="btn-alert-ok")
+                btn_ok = Button("OK", id="btn-alert-ok")
+                btn_ok.styles.height = 1
+                btn_ok.styles.min_height = 0
+                btn_ok.styles.border = ("none", "transparent")
+                btn_ok.styles.margin = (0, 1, 0, 1)
+                yield btn_ok
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "btn-alert-ok":
