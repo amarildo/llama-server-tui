@@ -1174,20 +1174,7 @@ class LlamaConfigApp(App):
         text-style: bold;
         width: 1fr;
     }
-    #btn-copy-code {
-        height: 1;
-        min-width: 11;
-        background: #3c3836;
-        color: #8ec07c;
-        border: none;
-        padding: 0 1;
-        margin: 0;
-        text-style: bold;
-    }
-    #btn-copy-code:hover {
-        background: #8ec07c;
-        color: #1d2021;
-    }
+
     #command-preview {
         background: #1d2021;
         color: #ebdbb2;
@@ -1642,7 +1629,6 @@ class LlamaConfigApp(App):
                 
                 with Horizontal(id="preview-header"):
                     yield Label("LIVE BASH COMMAND PREVIEW:", id="preview-title")
-                    yield Button("Copy Code", id="btn-copy-code")
                 yield Static("", id="command-preview")
 
         with Vertical(id="buttons"):
@@ -1697,13 +1683,6 @@ class LlamaConfigApp(App):
                 FileBrowserModal(start_path=tmpl_field.value, file_extensions=(".jinja", ".txt", ".tmpl")),
                 callback=self._on_template_selected,
             )
-        elif event.button.id == "btn-copy-code":
-            params = self.get_current_active_parameters()
-            cmd_str = self.build_live_command(params)
-            if copy_to_clipboard(cmd_str):
-                self.show_notification("✨ Command copied to clipboard! ✨", severity="success")
-            else:
-                self.show_notification("⚠ Clipboard tool missing (install xclip or wl-clipboard) ⚠", severity="error")
 
     def on_input_changed(self, event: Input.Changed) -> None:
         self.update_dashboard()
