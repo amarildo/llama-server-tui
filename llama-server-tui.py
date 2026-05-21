@@ -800,39 +800,21 @@ class DeleteProfileModal(ModalScreen[None]):
         width: 100%;
         margin-bottom: 1;
     }
-    .dp-row {
-        layout: horizontal;
-        height: 1;
-        align: left middle;
-        background: #1d2021;
-        width: 100%;
-        margin-bottom: 0;
-    }
-    .dp-row:hover {
-        background: #3c3836;
-    }
     .dp-entry {
-        width: 1fr;
+        width: 100%;
         height: 1;
         background: transparent;
         color: #ebdbb2;
         padding: 0 1;
     }
-    .btn-dp-delete {
-        background: transparent;
-        color: #fb4934;
-        min-width: 8;
-        width: 8;
-        height: 1;
-        min-height: 0;
-        border: none;
-        margin: 0;
-        padding: 0;
+    .dp-entry:hover {
+        color: #fabd2f;
         text-style: bold;
     }
-    .btn-dp-delete:hover {
-        background: #fb4934;
-        color: #282828;
+    .dp-entry.selected {
+        background: #fabd2f;
+        color: #1d2021;
+        text-style: bold;
     }
     #dp-buttons {
         align: center middle;
@@ -847,19 +829,34 @@ class DeleteProfileModal(ModalScreen[None]):
         background: #665c54;
         color: #ebdbb2;
     }
+    #btn-dp-delete {
+        background: #fb4934;
+        color: #1d2021;
+        text-style: bold;
+    }
+    #btn-dp-delete:hover {
+        background: #cc241d;
+        color: #ebdbb2;
+    }
+    #btn-dp-delete:disabled {
+        background: #504945;
+        color: #7c6f64;
+    }
     """
 
     def __init__(self, profiles_dir: str):
         super().__init__()
         self.profiles_dir = profiles_dir
+        self.selected_profile = ""
 
     def compose(self) -> ComposeResult:
         with Container(id="delete-profile-container"):
-            yield Static("🗑 Delete Profile", id="dp-title")
+            yield Static("Delete Profile", id="dp-title")
             with VerticalScroll(id="dp-list"):
                 yield from self._build_entries()
             with Horizontal(id="dp-buttons"):
                 yield Button("Cancel", id="btn-dp-cancel")
+                yield Button("Delete", id="btn-dp-delete", variant="error", disabled=True)
 
     def _build_entries(self):
         try:
@@ -870,15 +867,20 @@ class DeleteProfileModal(ModalScreen[None]):
                     name = f[:-5]
                     if name != "default":
                         custom_profiles_count += 1
-                        with Horizontal(classes="dp-row", id=f"dp-row-{name}"):
-                            yield Label(f"📄 {name}", classes="dp-entry")
-                            yield Button("Delete", id=f"btn-del-{name}", classes="btn-dp-delete")
+                        lbl = Label(f"📄 {name}", classes="dp-entry", id=f"lbl-dp-{name}")
+                        lbl.profile_name = name
+                        yield lbl
             if custom_profiles_count == 0:
                 yield Label("No custom profiles found.", classes="dp-entry")
         except Exception:
             yield Label("⚠ Failed to load profiles", classes="dp-entry")
 
     def _refresh_list(self) -> None:
+        self.selected_profile = ""
+        try:
+            self.query_one("#btn-dp-delete", Button).disabled = True
+        except Exception:
+            pass
         try:
             dp_list = self.query_one("#dp-list", VerticalScroll)
             dp_list.remove_children()
@@ -886,18 +888,40 @@ class DeleteProfileModal(ModalScreen[None]):
         except Exception:
             pass
 
+    def on_click(self, event) -> None:
+        widget = event.control if hasattr(event, 'control') else None
+        if widget is None or not isinstance(widget, Label):
+            return
+        if hasattr(widget, "profile_name"):
+            profile_name = widget.profile_name
+            self.selected_profile = profile_name
+            
+            try:
+                for lbl in self.query(".dp-entry"):
+                    lbl.remove_class("selected")
+            except Exception:
+                pass
+            
+            widget.add_class("selected")
+            
+            try:
+                self.query_one("#btn-dp-delete", Button).disabled = False
+            except Exception:
+                pass
+
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "btn-dp-cancel":
             self.dismiss()
-        elif event.button.id and event.button.id.startswith("btn-del-"):
-            profile_name = event.button.id[8:]
-            self.app.push_screen(
-                ConfirmDeleteModal(profile_name),
-                callback=lambda confirmed: self._on_delete_confirmed(confirmed, profile_name)
-            )
+        elif event.button.id == "btn-dp-delete":
+            if self.selected_profile:
+                self.app.push_screen(
+                    ConfirmDeleteModal(self.selected_profile),
+                    callback=self._on_delete_confirmed
+                )
 
-    def _on_delete_confirmed(self, confirmed: bool, profile_name: str) -> None:
-        if confirmed:
+    def _on_delete_confirmed(self, confirmed: bool) -> None:
+        if confirmed and self.selected_profile:
+            profile_name = self.selected_profile
             try:
                 profile_path = os.path.join(self.profiles_dir, f"{profile_name}.json")
                 if os.path.exists(profile_path):
