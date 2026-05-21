@@ -894,8 +894,7 @@ class LlamaConfigApp(App):
     }
     ToastRack {
         position: absolute;
-        left: 0;
-        top: 0;
+        offset: 0 0;
         layer: _toast;
         align: center middle;
         width: 100%;
