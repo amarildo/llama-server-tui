@@ -492,13 +492,13 @@ class SaveProfileModal(ModalScreen[str]):
         self.current_name = current_name
 
     def _get_profiles(self) -> list[tuple[str, str]]:
-        opts = [("", "-- Choose Existing Profile (Optional) --")]
+        opts = [("-- Choose Existing Profile (Optional) --", "")]
         try:
             files = sorted(os.listdir(self.profiles_dir))
             for f in files:
                 if f.endswith(".json"):
                     name = f[:-5]
-                    opts.append((name, f"📄 {name}"))
+                    opts.append((f"📄 {name}", name))
         except Exception:
             pass
         return opts
