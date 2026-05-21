@@ -1,0 +1,12 @@
+# Local server configurations containing personal absolute paths and IP configurations
+config.json
+
+# Python caching
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Operating system files
+.DS_Store
+Thumbs.db

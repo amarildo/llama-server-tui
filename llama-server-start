@@ -1,0 +1,3 @@
+#!/usr/bin/env zsh
+CONFIG_DIR="${0:A:h}"
+python3 "$CONFIG_DIR/llama-server-tui.py"
