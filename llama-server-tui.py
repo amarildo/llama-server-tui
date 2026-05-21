@@ -951,11 +951,9 @@ class LlamaConfigApp(App):
         background: #1d2021;
     }
     #dashboard-collapsible {
-        dock: bottom;
-        margin: 0;
-        padding: 0 2;
+        margin-right: 2;
+        margin-bottom: 1;
         background: #282828;
-        border-top: solid #3c3836;
         height: auto;
     }
     #dashboard-content {
@@ -1019,6 +1017,7 @@ class LlamaConfigApp(App):
         width: 100%;
         content-align: left top;
         overflow-x: scroll;
+        overflow-y: hidden;
     }
     Input:focus {
         background: #fabd2f;
