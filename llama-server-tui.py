@@ -681,11 +681,18 @@ class LoadProfileModal(ModalScreen[str]):
     }
     #load-profile-container {
         width: 50;
-        height: 20;
+        height: 21;
         background: #282828;
         border: thick #fabd2f;
         padding: 1 2;
         align: center middle;
+    }
+    #lp-hint {
+        color: #a89984;
+        text-align: center;
+        width: 100%;
+        margin-bottom: 1;
+        background: transparent;
     }
     #lp-title {
         color: #fabd2f;
@@ -764,6 +771,7 @@ class LoadProfileModal(ModalScreen[str]):
             yield Static("📂 Load Profile", id="lp-title")
             with VerticalScroll(id="lp-list"):
                 yield from self._build_entries()
+            yield Static("💡 Hint: Custom profiles show a 🗑 icon to delete. 'default' is protected.", id="lp-hint")
             with Horizontal(id="lp-buttons"):
                 yield Button("Cancel", id="btn-lp-cancel")
 
@@ -1452,7 +1460,7 @@ class LlamaConfigApp(App):
 
         with Horizontal(id="buttons"):
             yield Button("Load Profile", id="btn-load-profile", variant="default")
-            yield Button("Save As...", id="btn-save-profile", variant="primary")
+            yield Button("Save profile as...", id="btn-save-profile", variant="primary")
             yield Button("Start Server", id="btn-start", variant="success")
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
