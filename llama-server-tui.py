@@ -681,18 +681,11 @@ class LoadProfileModal(ModalScreen[str]):
     }
     #load-profile-container {
         width: 50;
-        height: 21;
+        height: 19;
         background: #282828;
         border: thick #fabd2f;
         padding: 1 2;
         align: center middle;
-    }
-    #lp-hint {
-        color: #a89984;
-        text-align: center;
-        width: 100%;
-        margin-bottom: 1;
-        background: transparent;
     }
     #lp-title {
         color: #fabd2f;
@@ -709,17 +702,6 @@ class LoadProfileModal(ModalScreen[str]):
         width: 100%;
         margin-bottom: 1;
     }
-    .lp-row {
-        layout: horizontal;
-        height: 1;
-        align: left middle;
-        background: #1d2021;
-        width: 100%;
-        margin-bottom: 0;
-    }
-    .lp-row:hover {
-        background: #3c3836;
-    }
     .lp-entry {
         width: 1fr;
         height: 1;
@@ -729,22 +711,6 @@ class LoadProfileModal(ModalScreen[str]):
     }
     .lp-entry:hover {
         color: #fabd2f;
-        text-style: bold;
-    }
-    .btn-lp-delete {
-        background: transparent;
-        color: #a89984;
-        min-width: 3;
-        width: 3;
-        height: 1;
-        min-height: 0;
-        border: none;
-        margin: 0;
-        padding: 0;
-    }
-    .btn-lp-delete:hover {
-        background: #fb4934;
-        color: #282828;
         text-style: bold;
     }
     #lp-buttons {
@@ -771,7 +737,6 @@ class LoadProfileModal(ModalScreen[str]):
             yield Static("📂 Load Profile", id="lp-title")
             with VerticalScroll(id="lp-list"):
                 yield from self._build_entries()
-            yield Static("💡 Hint: Custom profiles show a 🗑 icon to delete. 'default' is protected.", id="lp-hint")
             with Horizontal(id="lp-buttons"):
                 yield Button("Cancel", id="btn-lp-cancel")
 
@@ -781,22 +746,11 @@ class LoadProfileModal(ModalScreen[str]):
             for f in files:
                 if f.endswith(".json"):
                     name = f[:-5]
-                    with Horizontal(classes="lp-row", id=f"row-{name}"):
-                        lbl = Label(f"📄 {name}", classes="lp-entry")
-                        lbl.profile_name = name
-                        yield lbl
-                        if name != "default":
-                            yield Button("🗑", id=f"btn-del-{name}", classes="btn-lp-delete")
+                    lbl = Label(f"📄 {name}", classes="lp-entry")
+                    lbl.profile_name = name
+                    yield lbl
         except Exception:
             yield Label("⚠ Failed to load profiles", classes="lp-entry")
-
-    def _refresh_list(self) -> None:
-        try:
-            lp_list = self.query_one("#lp-list", VerticalScroll)
-            lp_list.remove_children()
-            lp_list.mount(*list(self._build_entries()))
-        except Exception:
-            pass
 
     def on_click(self, event) -> None:
         widget = event.control if hasattr(event, 'control') else None
@@ -808,6 +762,133 @@ class LoadProfileModal(ModalScreen[str]):
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "btn-lp-cancel":
             self.dismiss("")
+
+    def action_cancel(self) -> None:
+        self.dismiss("")
+
+
+class DeleteProfileModal(ModalScreen[None]):
+    """Modal dialog to list and delete custom profiles."""
+
+    BINDINGS = [("escape", "cancel", "Cancel")]
+
+    DEFAULT_CSS = """
+    DeleteProfileModal {
+        align: center middle;
+        background: #000000 60%;
+    }
+    #delete-profile-container {
+        width: 50;
+        height: 19;
+        background: #282828;
+        border: thick #fb4934;
+        padding: 1 2;
+        align: center middle;
+    }
+    #dp-title {
+        color: #fb4934;
+        text-style: bold;
+        text-align: center;
+        width: 100%;
+        margin-bottom: 1;
+        background: #282828;
+    }
+    #dp-list {
+        height: 1fr;
+        background: #1d2021;
+        padding: 0 1;
+        width: 100%;
+        margin-bottom: 1;
+    }
+    .dp-row {
+        layout: horizontal;
+        height: 1;
+        align: left middle;
+        background: #1d2021;
+        width: 100%;
+        margin-bottom: 0;
+    }
+    .dp-row:hover {
+        background: #3c3836;
+    }
+    .dp-entry {
+        width: 1fr;
+        height: 1;
+        background: transparent;
+        color: #ebdbb2;
+        padding: 0 1;
+    }
+    .btn-dp-delete {
+        background: transparent;
+        color: #fb4934;
+        min-width: 8;
+        width: 8;
+        height: 1;
+        min-height: 0;
+        border: none;
+        margin: 0;
+        padding: 0;
+        text-style: bold;
+    }
+    .btn-dp-delete:hover {
+        background: #fb4934;
+        color: #282828;
+    }
+    #dp-buttons {
+        align: center middle;
+        height: auto;
+        background: #282828;
+    }
+    #dp-buttons Button {
+        margin: 0 1;
+        min-width: 12;
+    }
+    #btn-dp-cancel {
+        background: #665c54;
+        color: #ebdbb2;
+    }
+    """
+
+    def __init__(self, profiles_dir: str):
+        super().__init__()
+        self.profiles_dir = profiles_dir
+
+    def compose(self) -> ComposeResult:
+        with Container(id="delete-profile-container"):
+            yield Static("🗑 Delete Profile", id="dp-title")
+            with VerticalScroll(id="dp-list"):
+                yield from self._build_entries()
+            with Horizontal(id="dp-buttons"):
+                yield Button("Cancel", id="btn-dp-cancel")
+
+    def _build_entries(self):
+        try:
+            files = sorted(os.listdir(self.profiles_dir))
+            custom_profiles_count = 0
+            for f in files:
+                if f.endswith(".json"):
+                    name = f[:-5]
+                    if name != "default":
+                        custom_profiles_count += 1
+                        with Horizontal(classes="dp-row", id=f"dp-row-{name}"):
+                            yield Label(f"📄 {name}", classes="dp-entry")
+                            yield Button("Delete", id=f"btn-del-{name}", classes="btn-dp-delete")
+            if custom_profiles_count == 0:
+                yield Label("No custom profiles found.", classes="dp-entry")
+        except Exception:
+            yield Label("⚠ Failed to load profiles", classes="dp-entry")
+
+    def _refresh_list(self) -> None:
+        try:
+            dp_list = self.query_one("#dp-list", VerticalScroll)
+            dp_list.remove_children()
+            dp_list.mount(*list(self._build_entries()))
+        except Exception:
+            pass
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "btn-dp-cancel":
+            self.dismiss()
         elif event.button.id and event.button.id.startswith("btn-del-"):
             profile_name = event.button.id[8:]
             self.app.push_screen(
@@ -838,7 +919,7 @@ class LoadProfileModal(ModalScreen[str]):
                 self.app.show_notification(f"⚠ Error deleting profile: {e} ⚠", severity="error")
 
     def action_cancel(self) -> None:
-        self.dismiss("")
+        self.dismiss()
 
 
 class AlertModal(ModalScreen[None]):
@@ -1106,6 +1187,15 @@ class LlamaConfigApp(App):
     #btn-save-profile:hover {
         background: #fe8019;
         color: #1d2021;
+    }
+    #btn-delete-profile {
+        background: #fb4934;
+        color: #1d2021;
+        text-style: bold;
+    }
+    #btn-delete-profile:hover {
+        background: #cc241d;
+        color: #ebdbb2;
     }
     #btn-start {
         background: #b8bb26;
@@ -1461,6 +1551,7 @@ class LlamaConfigApp(App):
         with Horizontal(id="buttons"):
             yield Button("Load Profile", id="btn-load-profile", variant="default")
             yield Button("Save profile as...", id="btn-save-profile", variant="primary")
+            yield Button("Delete Profile", id="btn-delete-profile", variant="error")
             yield Button("Start Server", id="btn-start", variant="success")
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
@@ -1473,6 +1564,11 @@ class LlamaConfigApp(App):
             self.push_screen(
                 SaveProfileModal(profiles_dir=self.profiles_dir, current_name=self.active_profile),
                 callback=self._on_profile_saved_as
+            )
+        elif event.button.id == "btn-delete-profile":
+            self.push_screen(
+                DeleteProfileModal(profiles_dir=self.profiles_dir),
+                callback=self._on_profile_deleted
             )
         elif event.button.id == "btn-start":
             self.save_config()
@@ -1555,6 +1651,9 @@ class LlamaConfigApp(App):
             self.active_profile = profile_name
             self.save_config()  # Dual-saves to both config.json and the new profile
             self.show_notification(f"✨ Profile saved as '{profile_name}'! ✨", severity="success")
+
+    def _on_profile_deleted(self, result) -> None:
+        pass
 
     def load_profile_data(self, data: dict) -> None:
         self.config.update(data)
