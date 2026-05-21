@@ -950,17 +950,18 @@ class LlamaConfigApp(App):
         padding: 1 2;
         background: #1d2021;
     }
-    #dashboard-collapsible {
+    #dashboard-container {
         margin-right: 2;
         margin-bottom: 1;
         background: #282828;
-        height: auto;
-    }
-    #dashboard-content {
         padding: 1 2;
-        background: #282828;
         height: auto;
         layout: vertical;
+    }
+    #dashboard-title-label {
+        color: #fabd2f;
+        text-style: bold;
+        margin-bottom: 1;
     }
     #vram-meter-container {
         height: 1;
@@ -1425,8 +1426,8 @@ class LlamaConfigApp(App):
                                 is_enabled=is_enabled
                             )
 
-        with Collapsible(title="📊 Real-Time Dashboard", id="dashboard-collapsible", collapsed=False):
-            with Container(id="dashboard-content"):
+            with Container(id="dashboard-container"):
+                yield Label("📊 REAL-TIME DASHBOARD", id="dashboard-title-label")
                 with Horizontal(id="vram-meter-container"):
                     yield Label("EST VRAM USAGE: ", id="vram-title")
                     yield Label("0.0 GB / 24 GB (0%)", id="vram-text")
