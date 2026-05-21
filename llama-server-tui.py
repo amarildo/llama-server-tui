@@ -495,6 +495,13 @@ class LlamaConfigApp(App):
     $panel: #282828;
     $background: #282828;
 
+    Screen {
+        background: #282828;
+        padding: 0;
+        margin: 0;
+        border: none;
+    }
+
     #ascii-header {
         dock: top;
         width: 100%;
