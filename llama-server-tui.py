@@ -1280,6 +1280,15 @@ class LlamaConfigApp(App):
         background: #cc241d;
         color: #ebdbb2;
     }
+    #btn-refresh-vram {
+        background: #d79921;
+        color: #1d2021;
+        text-style: bold;
+    }
+    #btn-refresh-vram:hover {
+        background: #fabd2f;
+        color: #1d2021;
+    }
     #btn-start {
         background: #b8bb26;
         color: #1d2021;
@@ -1643,6 +1652,7 @@ class LlamaConfigApp(App):
                 yield Button("Load Profile", id="btn-load-profile", variant="default")
                 yield Button("Save profile as...", id="btn-save-profile", variant="primary")
                 yield Button("Delete Profile", id="btn-delete-profile", variant="error")
+                yield Button("Refresh VRAM", id="btn-refresh-vram", variant="warning")
             with Horizontal(id="start-button-container"):
                 yield Button("Start Server", id="btn-start", variant="success")
 
@@ -1666,6 +1676,15 @@ class LlamaConfigApp(App):
             self.save_config()
             self.should_start = True
             self.exit()
+        elif event.button.id == "btn-refresh-vram":
+            defrag_script = os.path.join(CONFIG_DIR, "defrag_vram.py")
+            if os.path.exists(defrag_script):
+                self.notify("Sweeping VRAM, please wait...", title="VRAM Defrag")
+                try:
+                    subprocess.run(["python3", defrag_script], check=False)
+                    self.notify("VRAM successfully defragmented!", title="VRAM Defrag")
+                except Exception as e:
+                    self.notify(f"Failed to sweep VRAM: {e}", title="Error", severity="error")
         elif event.button.id == "btn-browse-model":
             model_field = self.query_one("#MODEL", Input)
             self.push_screen(
@@ -1868,13 +1887,28 @@ class LlamaConfigApp(App):
         mult_v = get_multiplier(cache_v)
         cache_multiplier = (mult_k + mult_v) / 2.0
             
-        # Dynamic KV cache coefficient based on base_vram (model size / parameter count proxy)
-        if base_vram < 7.0:  # ~7B/8B models
-            kv_coeff = 0.000035
-        elif base_vram < 20.0:  # ~14B/27B models
-            kv_coeff = 0.00007
-        else:  # ~70B/72B models
-            kv_coeff = 0.00009
+        # Determine model family for more accurate KV cache coefficients
+        is_qwen = "qwen" in model_path.lower()
+        
+        # Dynamic KV cache coefficient based on base_vram (model size in GB as proxy for parameters/layers/heads)
+        if is_qwen:
+            if base_vram < 5.0:    # Qwen 1.5B/3B
+                kv_coeff = 0.00012
+            elif base_vram < 11.0: # Qwen 7B/14B
+                kv_coeff = 0.00020
+            elif base_vram < 22.0: # Qwen 27B/32B
+                kv_coeff = 0.00049
+            else:                  # Qwen 72B
+                kv_coeff = 0.00031
+        else:
+            if base_vram < 5.0:    # Small models (1B-3B)
+                kv_coeff = 0.00008
+            elif base_vram < 12.0: # Standard 7B/8B models (e.g. LLaMA 3 8B)
+                kv_coeff = 0.00013
+            elif base_vram < 25.0: # 13B-34B models
+                kv_coeff = 0.00020
+            else:                  # 70B+ models
+                kv_coeff = 0.00031
 
         kv_memory = (ctx * kv_coeff) * cache_multiplier
         if not use_flash_attn:
@@ -2093,6 +2127,14 @@ if __name__ == "__main__":
     if app.should_start:
         os.system("clear")
         print("Starting Llama Server...")
+        
+        defrag_script = os.path.join(os.path.dirname(os.path.abspath(__file__)), "defrag_vram.py")
+        if os.path.exists(defrag_script):
+            try:
+                subprocess.run(["python3", defrag_script], check=False)
+            except Exception as e:
+                print(f"Failed to sweep VRAM: {e}")
+                
         cfg = app.config
         
         bin_path = os.path.expanduser(cfg["BIN"])
