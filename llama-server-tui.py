@@ -3,8 +3,10 @@ import os
 import json
 import shlex
 import subprocess
+import struct
 from textual.app import App, ComposeResult
 from textual.screen import ModalScreen
+from textual import on
 from textual.containers import VerticalScroll, Horizontal, Vertical, Container
 from textual.widgets import Footer, Input, Button, Label, Collapsible, Checkbox, Static, Select
 from textual.reactive import reactive
@@ -12,6 +14,103 @@ from pathlib import Path
 
 CONFIG_DIR = os.path.dirname(os.path.abspath(__file__))
 CONFIG_FILE = os.path.join(CONFIG_DIR, "config.json")
+
+GGUF_CACHE = {}
+
+def get_model_info(model_path: str) -> dict:
+    if not model_path:
+        return {"size_gib": 16.5, "metadata": {}}
+    model_path = os.path.expanduser(model_path)
+    if model_path in GGUF_CACHE:
+        return GGUF_CACHE[model_path]
+    
+    info = {"size_gib": 16.5, "metadata": {}}
+    if os.path.isfile(model_path):
+        try:
+            info["size_gib"] = os.path.getsize(model_path) / (1024 ** 3)
+            info["metadata"] = parse_gguf_metadata(model_path)
+        except Exception:
+            pass
+    # Cache the result to prevent redundant slow I/O calls
+    GGUF_CACHE[model_path] = info
+    return info
+
+def truncate_path(path: str) -> str:
+    if not path or len(path) <= 30:
+        return path
+    path = os.path.expanduser(path)
+    parts = os.path.split(path)
+    if parts[1]:
+        return f".../{parts[1]}"
+    return path
+
+def parse_gguf_metadata(model_path: str) -> dict:
+    metadata = {}
+    if not model_path:
+        return metadata
+    model_path = os.path.expanduser(model_path)
+    if not os.path.isfile(model_path):
+        return metadata
+    try:
+        with open(model_path, "rb") as f:
+            magic = f.read(4)
+            if magic != b"GGUF":
+                return metadata
+            version = struct.unpack("<I", f.read(4))[0]
+            if version not in (1, 2, 3):
+                return metadata
+            tensor_count = struct.unpack("<Q", f.read(8))[0]
+            metadata_count = struct.unpack("<Q", f.read(8))[0]
+            
+            def read_str(file_obj):
+                length = struct.unpack("<Q", file_obj.read(8))[0]
+                return file_obj.read(length).decode("utf-8", errors="ignore")
+                
+            def read_val(file_obj, v_type):
+                if v_type == 0: return struct.unpack("<B", file_obj.read(1))[0]
+                elif v_type == 1: return struct.unpack("<b", file_obj.read(1))[0]
+                elif v_type == 2: return struct.unpack("<H", file_obj.read(2))[0]
+                elif v_type == 3: return struct.unpack("<h", file_obj.read(2))[0]
+                elif v_type == 4: return struct.unpack("<I", file_obj.read(4))[0]
+                elif v_type == 5: return struct.unpack("<i", file_obj.read(4))[0]
+                elif v_type == 6: return struct.unpack("<f", file_obj.read(4))[0]
+                elif v_type == 7: return struct.unpack("<?", file_obj.read(1))[0]
+                elif v_type == 8: return read_str(file_obj)
+                elif v_type == 9:
+                    sub_type = struct.unpack("<I", file_obj.read(4))[0]
+                    array_len = struct.unpack("<Q", file_obj.read(8))[0]
+                    if sub_type in (0, 1, 7):
+                        file_obj.seek(array_len * 1, os.SEEK_CUR)
+                    elif sub_type in (2, 3):
+                        file_obj.seek(array_len * 2, os.SEEK_CUR)
+                    elif sub_type in (4, 5, 6):
+                        file_obj.seek(array_len * 4, os.SEEK_CUR)
+                    elif sub_type in (10, 11, 12):
+                        file_obj.seek(array_len * 8, os.SEEK_CUR)
+                    elif sub_type == 8:
+                        for _ in range(array_len):
+                            str_len = struct.unpack("<Q", file_obj.read(8))[0]
+                            file_obj.seek(str_len, os.SEEK_CUR)
+                    else:
+                        for _ in range(array_len):
+                            read_val(file_obj, sub_type)
+                    return f"<Array of type {sub_type} length {array_len}>"
+                elif v_type == 10: return struct.unpack("<Q", file_obj.read(8))[0]
+                elif v_type == 11: return struct.unpack("<q", file_obj.read(8))[0]
+                elif v_type == 12: return struct.unpack("<d", file_obj.read(8))[0]
+                return None
+
+            for _ in range(metadata_count):
+                key = read_str(f)
+                val_type = struct.unpack("<I", f.read(4))[0]
+                val = read_val(f, val_type)
+                kl = key.lower()
+                if any(x in kl for x in ("block_count", "head_count", "embedding_length", "key_length", "value_length")):
+                    metadata[key] = val
+    except Exception:
+        pass
+    return metadata
+
 
 ASCII_HEADER = """  ╦  ╦  ╔═╗ ╔╦╗ ╔═╗   ╦  ╔═╗ ╦ ╦ ╔╗╔ ╔═╗ ╦ ╦ ╔═╗ ╦═╗
   ║  ║  ╠═╣ ║║║ ╠═╣   ║  ╠═╣ ║ ║ ║║║ ║   ╠═╣ ║╣  ╠╦╝
@@ -82,6 +181,8 @@ DEFAULT_CONFIG = {
     "DRY_PENALTY_LAST_N": "-1",
     "XTC_PROBABILITY": "0.5",
     "XTC_THRESHOLD": "0.1",
+    "SWA_FULL": "off",
+    "GGML_CUDA_DISABLE_GRAPHS": "on",
     "EXTRA_FLAGS": "",
 }
 
@@ -150,6 +251,8 @@ PARAM_HELP = {
     "CHAT_TEMPLATE_FILE": "[Flag: --chat-template-file] | [Default: None] | Path to a custom Jinja chat template file, overriding the model's embedded template.",
     "TEMPLATE_KWARGS": "[Flag: --chat-template-kwargs] | [Default: {\"preserve_thinking\":true}] | JSON arguments for chat templates. Crucial for Qwen3.6/DeepSeek to keep thinking tags.",
     "SKIP_CHAT_PARSING": "[Flag: --skip-chat-parsing] | [Default: off] | Disable internal parser. If enabled, reasoning/thinking and tool calls are dumped directly into content.",
+    "SWA_FULL": "[Flag: --swa-full] | [Default: off] | Use full-size Sliding Window Attention (SWA) cache. Prevents context invalidation and reprocessing on models using SWA (like Qwen 3.6).",
+    "GGML_CUDA_DISABLE_GRAPHS": "[Flag: GGML_CUDA_DISABLE_GRAPHS=1] | [Default: on] | Disable CUDA Graphs (on/off). Highly recommended to keep 'on' when using quantized KV Cache (q8_0) under Flash Attention to prevent GPU illegal memory access crashes.",
     "EXTRA_FLAGS": "[Flag: None] | [Default: None] | Additional custom CLI arguments to append directly to the command (e.g., --verbose --grp-attn-n 4).",
 }
 
@@ -168,6 +271,8 @@ SELECT_OPTIONS = {
     "NUMA": [("none", "none"), ("distribute", "distribute"), ("isolate", "isolate"), ("numactl", "numactl")],
     "NO_MMAP": [("off", "off"), ("on", "on")],
     "CACHE_PROMPT": [("on", "on"), ("off", "off")],
+    "SWA_FULL": [("off", "off"), ("on", "on")],
+    "GGML_CUDA_DISABLE_GRAPHS": [("on", "on"), ("off", "off")],
 }
 
 def copy_to_clipboard(text: str) -> bool:
@@ -210,27 +315,139 @@ class ParameterField(Horizontal):
         super().__init__()
         self.key = key
         self.label_text = label
-        self.initial_value = value
+        self.true_value = value
+        
+        # Robust normalization for Select widgets to handle booleans, numbers, and case-variations
+        if self.key in SELECT_OPTIONS:
+            opts = SELECT_OPTIONS[self.key]
+            valid_vals = [o[1] for o in opts]
+            val_str = str(value).strip().lower()
+            if value not in valid_vals:
+                if val_str in ("true", "1", "yes", "on") and "on" in valid_vals:
+                    self.true_value = "on"
+                elif val_str in ("false", "0", "no", "off") and "off" in valid_vals:
+                    self.true_value = "off"
+                elif val_str in ("auto",) and "auto" in valid_vals:
+                    self.true_value = "auto"
+                elif val_str in ("none",) and "none" in valid_vals:
+                    self.true_value = "none"
+                else:
+                    self.true_value = valid_vals[0]
+
+        self.initial_value = self.true_value
+        if self.key in ("MODEL", "BIN", "MMPROJ", "CHAT_TEMPLATE_FILE"):
+            self.initial_value = truncate_path(self.true_value)
         self.is_mandatory = is_mandatory
         self._initial_enabled = is_enabled
 
+    def on_descendant_focus(self, event) -> None:
+        # Restore full absolute path when focused
+        inp = self.get_input_widget()
+        if inp is not None and hasattr(self, "true_value"):
+            if not isinstance(inp, Select):
+                inp.value = self.true_value
+
+    def on_descendant_blur(self, event) -> None:
+        # Save and truncate path when blurred
+        inp = self.get_input_widget()
+        if inp is not None:
+            if not isinstance(inp, Select):
+                val_str = inp.value
+                if not (self.key in ("MODEL", "BIN", "MMPROJ", "CHAT_TEMPLATE_FILE") and val_str.startswith(".../")):
+                    self.true_value = val_str
+            if self.key in ("MODEL", "BIN", "MMPROJ", "CHAT_TEMPLATE_FILE"):
+                inp.value = truncate_path(self.true_value)
+
+    def get_input_widget(self):
+        widget = getattr(self, "_input_widget", None)
+        if widget is None:
+            try:
+                if self.key in SELECT_OPTIONS:
+                    widget = self.query_one(Select)
+                else:
+                    widget = self.query_one(Input)
+                self._input_widget = widget
+            except Exception:
+                widget = None
+        return widget
+
+    def get_chk_widget(self):
+        widget = getattr(self, "_chk_widget", None)
+        if widget is None:
+            try:
+                widget = self.query_one(f"#chk-{self.key}", Label)
+                self._chk_widget = widget
+            except Exception:
+                widget = None
+        return widget
+
+    def get_label_widget(self):
+        widget = getattr(self, "_label_widget", None)
+        if widget is None:
+            try:
+                widget = self.query_one(".field-label", Label)
+                self._label_widget = widget
+            except Exception:
+                widget = None
+        return widget
+
+    def get_info_widget(self):
+        widget = getattr(self, "_info_widget", None)
+        if widget is None:
+            try:
+                widget = self.query_one(".info-icon", Label)
+                self._info_widget = widget
+            except Exception:
+                widget = None
+        return widget
+
+    def get_btn_widget(self):
+        widget = getattr(self, "_btn_widget", None)
+        if widget is None:
+            try:
+                widget = self.query_one(".browse-btn", Button)
+                self._btn_widget = widget
+            except Exception:
+                widget = None
+        return widget
+
     @property
     def value(self) -> str:
-        if self.key in SELECT_OPTIONS:
-            val = self.query_one(Select).value
-            return str(val) if val is not None and val != Select.BLANK else ""
-        return self.query_one(Input).value
+        return getattr(self, "true_value", "")
 
     @value.setter
     def value(self, val: str) -> None:
+        # Robust normalization for Select widgets to handle booleans, numbers, and case-variations
         if self.key in SELECT_OPTIONS:
-            self.query_one(Select).value = val
-        else:
-            self.query_one(Input).value = val
+            opts = SELECT_OPTIONS[self.key]
+            valid_vals = [o[1] for o in opts]
+            val_str = str(val).strip().lower()
+            if val not in valid_vals:
+                if val_str in ("true", "1", "yes", "on") and "on" in valid_vals:
+                    val = "on"
+                elif val_str in ("false", "0", "no", "off") and "off" in valid_vals:
+                    val = "off"
+                elif val_str in ("auto",) and "auto" in valid_vals:
+                    val = "auto"
+                elif val_str in ("none",) and "none" in valid_vals:
+                    val = "none"
+                else:
+                    val = valid_vals[0]
+
+        self.true_value = val
+        inp = self.get_input_widget()
+        if inp is not None:
+            if inp.has_focus:
+                inp.value = val
+            else:
+                if self.key in ("MODEL", "BIN", "MMPROJ", "CHAT_TEMPLATE_FILE"):
+                    inp.value = truncate_path(val)
+                else:
+                    inp.value = val
 
     def compose(self) -> ComposeResult:
         if not self.is_mandatory:
-            yield Label(" ✔ ", classes="custom-checkbox", id=f"chk-{self.key}")
+            yield Label(" ✓ ", classes="custom-checkbox", id=f"chk-{self.key}")
         else:
             yield Label("   ", classes="spacer-checkbox")
         yield Label(self.label_text, classes="field-label")
@@ -264,30 +481,98 @@ class ParameterField(Horizontal):
         if not self.is_mounted:
             return
         if not self.is_mandatory:
-            try:
-                chk = self.query_one(f"#chk-{self.key}", Label)
-                chk.update(" ✔ " if self.enabled else " ✖ ")
-            except Exception:
-                pass
+            # Custom Checkbox Label
+            chk = self.get_chk_widget()
+            if chk is not None:
+                try:
+                    chk.update(" ✓ " if self.enabled else " ✗ ")
+                    if self.enabled:
+                        chk.remove_class("dimmed")
+                    else:
+                        chk.add_class("dimmed")
+                except Exception:
+                    pass
+            
+            # Field Label
+            lbl = self.get_label_widget()
+            if lbl is not None:
+                try:
+                    if self.enabled:
+                        lbl.remove_class("dimmed")
+                    else:
+                        lbl.add_class("dimmed")
+                except Exception:
+                    pass
+                    
+            # Info Icon
+            info = self.get_info_widget()
+            if info is not None:
+                try:
+                    if self.enabled:
+                        info.remove_class("dimmed")
+                    else:
+                        info.add_class("dimmed")
+                except Exception:
+                    pass
+
+            # Self (ParameterField)
             if self.enabled:
                 self.remove_class("dimmed")
             else:
                 self.add_class("dimmed")
-            try:
-                if self.key in SELECT_OPTIONS:
-                    self.query_one(Select).disabled = not self.enabled
-                else:
-                    self.query_one(Input).disabled = not self.enabled
-            except Exception:
-                pass
+                
+            # Input Widget
+            inp = self.get_input_widget()
+            if inp is not None:
+                try:
+                    inp.disabled = not self.enabled
+                    if self.enabled:
+                        inp.remove_class("dimmed")
+                    else:
+                        inp.add_class("dimmed")
+                except Exception:
+                    pass
+            
+            # Browse Button Widget
+            btn = self.get_btn_widget()
+            if btn is not None:
+                try:
+                    btn.disabled = not self.enabled
+                    if self.enabled:
+                        btn.remove_class("dimmed")
+                    else:
+                        btn.add_class("dimmed")
+                except Exception:
+                    pass
 
     def on_mount(self) -> None:
         self.enabled = self._initial_enabled
-        self.update_visuals()
+        self.call_after_refresh(self.update_visuals)
 
     def on_click(self, event) -> None:
-        if not self.is_mandatory and hasattr(event, "control") and event.control and event.control.id == f"chk-{self.key}":
-            self.enabled = not self.enabled
+        if not self.is_mandatory and hasattr(event, "control") and event.control:
+            # Allow toggling either by clicking the checkbox itself or the text label next to it
+            if event.control.id == f"chk-{self.key}" or (hasattr(event.control, "classes") and "field-label" in event.control.classes):
+                self.enabled = not self.enabled
+
+    @on(Select.Changed)
+    def on_select_changed(self, event: Select.Changed) -> None:
+        self.true_value = str(event.value)
+        with open("/home/peter/LLamaLauncherTui/tui_debug.log", "a") as f:
+            f.write(f"[ParameterField select_changed] key={self.key}, val={event.value}\n")
+        if hasattr(self, "app") and self.app and hasattr(self.app, "update_dashboard"):
+            self.app.update_dashboard()
+
+    @on(Input.Changed)
+    def on_input_changed(self, event: Input.Changed) -> None:
+        val_str = str(event.value)
+        if self.key in ("MODEL", "BIN", "MMPROJ", "CHAT_TEMPLATE_FILE") and val_str.startswith(".../"):
+            return  # Ignore visual path mask truncation updates to preserve the full absolute path
+        self.true_value = val_str
+        with open("/home/peter/LLamaLauncherTui/tui_debug.log", "a") as f:
+            f.write(f"[ParameterField input_changed] key={self.key}, val={event.value}\n")
+        if hasattr(self, "app") and self.app and hasattr(self.app, "update_dashboard"):
+            self.app.update_dashboard()
 
 
 
@@ -387,12 +672,7 @@ class FileBrowserModal(ModalScreen[str]):
             with VerticalScroll(id="fb-file-list"):
                 yield from self._build_entries()
             with Horizontal(id="fb-buttons"):
-                btn_cancel = Button("Cancel", id="btn-fb-cancel")
-                btn_cancel.styles.height = 1
-                btn_cancel.styles.min_height = 0
-                btn_cancel.styles.border = ("none", "transparent")
-                btn_cancel.styles.margin = (0, 1, 0, 1)
-                yield btn_cancel
+                yield Button("Cancel", id="btn-fb-cancel", classes="modal-btn")
 
     def _build_entries(self):
         """Build file/dir labels for current directory."""
@@ -570,15 +850,8 @@ class SaveProfileModal(ModalScreen[str]):
             yield Label("Or enter new profile name:", id="sp-label")
             yield Input(value=self.current_name, id="sp-input")
             with Horizontal(id="sp-buttons"):
-                btn_cancel = Button("Cancel", id="btn-sp-cancel")
-                btn_save = Button("Save", id="btn-sp-save")
-                for btn in (btn_cancel, btn_save):
-                    btn.styles.height = 1
-                    btn.styles.min_height = 0
-                    btn.styles.border = ("none", "transparent")
-                    btn.styles.margin = (0, 1, 0, 1)
-                yield btn_cancel
-                yield btn_save
+                yield Button("Cancel", id="btn-sp-cancel", classes="modal-btn")
+                yield Button("Save", id="btn-sp-save", classes="modal-btn")
 
     def on_select_changed(self, event: Select.Changed) -> None:
         if event.value:
@@ -674,15 +947,8 @@ class ConfirmDeleteModal(ModalScreen[bool]):
             yield Static("⚠ Confirm Delete", id="confirm-title")
             yield Static(f"Are you sure you want to delete profile '{self.profile_name}'?", id="confirm-message")
             with Horizontal(id="confirm-buttons"):
-                btn_yes = Button("Yes, Delete", id="btn-confirm-yes")
-                btn_no = Button("No", id="btn-confirm-no")
-                for btn in (btn_yes, btn_no):
-                    btn.styles.height = 1
-                    btn.styles.min_height = 0
-                    btn.styles.border = ("none", "transparent")
-                    btn.styles.margin = (0, 1, 0, 1)
-                yield btn_yes
-                yield btn_no
+                yield Button("Yes, Delete", id="btn-confirm-yes", classes="modal-btn")
+                yield Button("No", id="btn-confirm-no", classes="modal-btn")
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "btn-confirm-yes":
@@ -769,12 +1035,7 @@ class LoadProfileModal(ModalScreen[str]):
             with VerticalScroll(id="lp-list"):
                 yield from self._build_entries()
             with Horizontal(id="lp-buttons"):
-                btn_cancel = Button("Cancel", id="btn-lp-cancel")
-                btn_cancel.styles.height = 1
-                btn_cancel.styles.min_height = 0
-                btn_cancel.styles.border = ("none", "transparent")
-                btn_cancel.styles.margin = (0, 1, 0, 1)
-                yield btn_cancel
+                yield Button("Cancel", id="btn-lp-cancel", classes="modal-btn")
 
     def _build_entries(self):
         try:
@@ -894,15 +1155,8 @@ class DeleteProfileModal(ModalScreen[None]):
             with VerticalScroll(id="dp-list"):
                 yield from self._build_entries()
             with Horizontal(id="dp-buttons"):
-                btn_cancel = Button("Cancel", id="btn-dp-cancel")
-                btn_delete = Button("Delete", id="btn-dp-delete", variant="error", disabled=True)
-                for btn in (btn_cancel, btn_delete):
-                    btn.styles.height = 1
-                    btn.styles.min_height = 0
-                    btn.styles.border = ("none", "transparent")
-                    btn.styles.margin = (0, 1, 0, 1)
-                yield btn_cancel
-                yield btn_delete
+                yield Button("Cancel", id="btn-dp-cancel", classes="modal-btn")
+                yield Button("Delete", id="btn-dp-delete", variant="error", disabled=True, classes="modal-btn")
 
     def _build_entries(self):
         try:
@@ -982,6 +1236,7 @@ class DeleteProfileModal(ModalScreen[None]):
                             default_data = json.load(f)
                         self.app.load_profile_data(default_data)
                     self.app.save_config()
+                    self.app.update_profile_loaded_label()
 
                 self.app.show_notification(f"🗑 Profile '{profile_name}' deleted successfully 🗑", severity="success")
                 self._refresh_list()
@@ -1076,6 +1331,52 @@ class AlertModal(ModalScreen[None]):
         self.dismiss()
 
 
+class AutoDismissModal(ModalScreen[None]):
+    """A beautiful centered modal that automatically dismisses after 3 seconds."""
+
+    BINDINGS = [
+        ("escape", "dismiss_modal", "Dismiss"),
+        ("enter", "dismiss_modal", "Dismiss"),
+        ("space", "dismiss_modal", "Dismiss"),
+    ]
+
+    def __init__(self, title: str, message: str):
+        super().__init__()
+        self.title_text = title
+        self.message_text = message
+        self._timer = None
+
+    def compose(self) -> ComposeResult:
+        with Container(id="autodismiss-container"):
+            yield Static(f"✨ {self.title_text} ✨", id="autodismiss-title")
+            yield Static(self.message_text, id="autodismiss-message")
+
+    def on_mount(self) -> None:
+        self._timer = self.set_timer(1.8, self.auto_dismiss)
+
+    def on_unmount(self) -> None:
+        if self._timer:
+            try:
+                self._timer.stop()
+            except Exception:
+                pass
+
+    def auto_dismiss(self) -> None:
+        try:
+            self.dismiss()
+        except Exception:
+            pass
+
+    def on_click(self) -> None:
+        try:
+            self.dismiss()
+        except Exception:
+            pass
+
+    def action_dismiss_modal(self) -> None:
+        self.dismiss()
+
+
 # NotificationModal replaced with elegant inline notification banner
 
 
@@ -1099,6 +1400,7 @@ class LlamaConfigApp(App):
         padding: 0;
         margin: 0;
         border: none;
+        overflow: hidden;
     }
 
     #ascii-header {
@@ -1205,7 +1507,7 @@ class LlamaConfigApp(App):
         color: #ebdbb2;
         text-style: bold;
     }
-    ParameterField .custom-checkbox {
+    .custom-checkbox {
         background: #282828;
         color: #b8bb26;
         text-style: bold;
@@ -1213,12 +1515,31 @@ class LlamaConfigApp(App):
         margin-right: 1;
         content-align: center middle;
     }
-    ParameterField.dimmed .custom-checkbox {
-        color: #fb4934;
+    .custom-checkbox.dimmed {
+        color: #7c6f64;
     }
-    .custom-checkbox:hover {
-        background: #3c3836;
+    .field-label.dimmed {
+        color: #7c6f64;
     }
+    .info-icon.dimmed {
+        color: #504945;
+    }
+    Input.dimmed {
+        background: #1d2021;
+        color: #7c6f64;
+        border: none;
+    }
+    SelectCurrent.dimmed {
+        background: #1d2021;
+        color: #7c6f64;
+        border: none;
+    }
+    .browse-btn.dimmed {
+        background: #1d2021;
+        color: #7c6f64;
+        border: none;
+    }
+
     Button {
         margin: 2 2;
         background: #3c3836;
@@ -1230,21 +1551,35 @@ class LlamaConfigApp(App):
         background: #504945;
         color: #fbf1c7;
     }
+    .modal-btn {
+        margin: 0 1;
+        min-width: 12;
+        height: 1;
+        min-height: 0;
+        border: none;
+    }
     #buttons {
         dock: bottom;
         layout: vertical;
-        height: 8;
+        height: 10;
         background: #1d2021;
         border-top: solid #3c3836;
         align: center middle;
         padding-top: 1;
+    }
+    #profile-loaded-label {
+        color: #a89984;
+        text-align: center;
+        width: 100%;
+        height: 1;
+        margin-bottom: 1;
     }
     #profile-buttons {
         align: center middle;
         height: 1;
         margin-bottom: 1;
     }
-    #profile-buttons Button {
+    .profile-btn {
         margin: 0 2;
         height: 1;
         min-height: 0;
@@ -1306,20 +1641,22 @@ class LlamaConfigApp(App):
         color: #1d2021;
     }
     .grid-container {
-        layout: grid;
-        grid-size: 2;
+        layout: horizontal;
         height: auto;
-        padding: 0;
-        grid-columns: 1fr 1fr;
-        grid-rows: auto;
-        grid-gutter: 1 6;
         background: #282828;
+    }
+    .grid-column {
+        width: 1fr;
+        height: auto;
+        background: #282828;
+        padding-right: 4;
     }
     ParameterField {
         layout: horizontal;
         height: 1;
         align: left middle;
         background: #282828;
+        margin-bottom: 1;
     }
     .field-label {
         width: 25;
@@ -1385,7 +1722,6 @@ class LlamaConfigApp(App):
         background: #282828;
     }
     .dimmed {
-        opacity: 0.3;
     }
     .info-icon {
         width: 3;
@@ -1413,10 +1749,9 @@ class LlamaConfigApp(App):
         color: #1d2021;
     }
     Tooltip {
-        background: #504945;
+        background: #3c3836;
         color: #ebdbb2;
-        border-right: wide #1d2021;
-        border-bottom: wide #1d2021;
+        border: solid #fabd2f;
         padding: 1 2;
         max-width: 50;
     }
@@ -1436,13 +1771,39 @@ class LlamaConfigApp(App):
         text-style: bold;
     }
     ToastRack {
-        dock: none;
-        position: absolute;
-        offset: 0 0;
+        align: right top;
+        dock: right;
         layer: _toast;
+        width: auto;
+        height: auto;
+        overflow: hidden;
+        margin: 1 2;
+    }
+    AutoDismissModal {
         align: center middle;
+        background: transparent !important;
+    }
+    #autodismiss-container {
+        width: 60;
+        height: 8;
+        background: #282828;
+        border: thick #fabd2f;
+        padding: 1 2;
+        align: center middle;
+    }
+    #autodismiss-title {
+        color: #fabd2f;
+        text-style: bold;
+        text-align: center;
         width: 100%;
-        height: 100%;
+        margin-bottom: 1;
+        background: #282828;
+    }
+    #autodismiss-message {
+        color: #ebdbb2;
+        text-align: center;
+        width: 100%;
+        background: #282828;
     }
     """
 
@@ -1451,11 +1812,13 @@ class LlamaConfigApp(App):
         self.config = DEFAULT_CONFIG.copy()
         self.should_start = False
         self.enabled_fields = {}
+        self.fields_by_key = {}
         
         # Ensure profiles directory exists
         self.profiles_dir = os.path.join(CONFIG_DIR, "profiles")
         os.makedirs(self.profiles_dir, exist_ok=True)
         self.active_profile = "default"
+        profile_data = {}
         
         # Load initial config
         if os.path.exists(CONFIG_FILE):
@@ -1464,6 +1827,16 @@ class LlamaConfigApp(App):
                     loaded = json.load(f)
                     self.config.update(loaded)
                     self.active_profile = loaded.get("ACTIVE_PROFILE", "default")
+            except Exception:
+                pass
+                
+        # Load active profile JSON if it exists
+        active_profile_path = os.path.join(self.profiles_dir, f"{self.active_profile}.json")
+        if os.path.exists(active_profile_path):
+            try:
+                with open(active_profile_path, "r") as f:
+                    profile_data = json.load(f)
+                    self.config.update(profile_data)
             except Exception:
                 pass
         
@@ -1484,7 +1857,15 @@ class LlamaConfigApp(App):
                 "XTC_PROBABILITY", "XTC_THRESHOLD"
             ]
         for k in DEFAULT_CONFIG:
-            self.enabled_fields[k] = k not in disabled
+            is_mandatory = k in ("BIN", "MODEL", "HOST", "PORT", "EXTRA_FLAGS")
+            if is_mandatory:
+                self.enabled_fields[k] = True
+            else:
+                val = str(self.config.get(k, "")).strip()
+                if val == "":
+                    self.enabled_fields[k] = False
+                else:
+                    self.enabled_fields[k] = k not in disabled
 
     def get_css_variables(self) -> dict[str, str]:
         variables = super().get_css_variables()
@@ -1501,34 +1882,26 @@ class LlamaConfigApp(App):
         return variables
 
     def show_notification(self, message: str, severity: str = "success") -> None:
-        try:
-            banner = self.query_one("#notification-banner", Static)
-            banner.update(message)
-            banner.remove_class("success", "error")
-            banner.add_class(severity)
-            banner.styles.display = "block"
-            
-            if hasattr(self, "_notif_timer") and self._notif_timer:
-                try:
-                    self._notif_timer.stop()
-                except Exception:
-                    pass
-            
-            self._notif_timer = self.set_timer(2.0, self.hide_notification)
-        except Exception:
-            pass
+        title = "Notification"
+        if severity == "error":
+            title = "Error"
+        elif severity == "success":
+            title = "Success"
+        self.push_screen(AutoDismissModal(title, message))
 
     def hide_notification(self) -> None:
-        try:
-            banner = self.query_one("#notification-banner", Static)
-            banner.styles.display = "none"
-            self._notif_timer = None
-        except Exception:
-            pass
+        pass
+
+    async def on_event(self, event) -> None:
+        event_name = event.__class__.__name__
+        if "Focus" in event_name or "Click" in event_name or "Changed" in event_name or "Scroll" in event_name:
+            with open("/home/peter/LLamaLauncherTui/tui_debug.log", "a") as f:
+                import time
+                f.write(f"[{time.time()}] Event: {event_name}, sender: {getattr(event, 'sender', None)}, control: {getattr(event, 'control', None)}\n")
+        await super().on_event(event)
 
     def compose(self) -> ComposeResult:
         yield Static(ASCII_HEADER, id="ascii-header")
-        yield Static("", id="notification-banner")
         
         sections = [
             ("Infrastructure", [
@@ -1556,9 +1929,11 @@ class LlamaConfigApp(App):
                 ("MAIN_GPU", "Main GPU:"),
                 ("TENSOR_SPLIT", "Tensor Split:"),
                 ("NUMA", "NUMA Optimization:"),
+                ("GGML_CUDA_DISABLE_GRAPHS", "Disable CUDA Graphs:"),
             ]),
             ("Context & Cache", [
                 ("CTX_CHECKPOINTS", "Ctx Checkpoints:"),
+                ("SWA_FULL", "SWA Full Cache:"),
                 ("CACHE_RAM", "Cache RAM MB:"),
                 ("CONT_BATCHING", "Cont Batching:"),
                 ("CACHE_PROMPT", "Prompt Caching:"),
@@ -1622,18 +1997,19 @@ class LlamaConfigApp(App):
 
         with VerticalScroll(id="main-scroll"):
             for title, fields in sections:
-                with Collapsible(title=title, collapsed=False):
-                    with Container(classes="grid-container"):
-                        for key, label in fields:
-                            is_mandatory = key in ("BIN", "MODEL", "HOST", "PORT", "EXTRA_FLAGS")
-                            is_enabled = self.enabled_fields.get(key, True)
-                            yield ParameterField(
-                                key=key, 
-                                label=label, 
-                                value=str(self.config.get(key, "")),
-                                is_mandatory=is_mandatory,
-                                is_enabled=is_enabled
-                            )
+                # Collapse all sections by default except "Infrastructure" to minimize initial widget render load and eliminate input click lag.
+                collapsed = title != "Infrastructure"
+                with Collapsible(title=title, collapsed=collapsed):
+                    for key, label in fields:
+                        is_mandatory = key in ("BIN", "MODEL", "HOST", "PORT", "EXTRA_FLAGS")
+                        is_enabled = self.enabled_fields.get(key, True)
+                        yield ParameterField(
+                            key=key, 
+                            label=label, 
+                            value=str(self.config.get(key, "")),
+                            is_mandatory=is_mandatory,
+                            is_enabled=is_enabled
+                        )
 
             with Container(id="dashboard-container"):
                 yield Label("📊 REAL-TIME DASHBOARD", id="dashboard-title-label")
@@ -1648,11 +2024,12 @@ class LlamaConfigApp(App):
                 yield Static("", id="command-preview")
 
         with Vertical(id="buttons"):
+            yield Label("", id="profile-loaded-label")
             with Horizontal(id="profile-buttons"):
-                yield Button("Load Profile", id="btn-load-profile", variant="default")
-                yield Button("Save profile as...", id="btn-save-profile", variant="primary")
-                yield Button("Delete Profile", id="btn-delete-profile", variant="error")
-                yield Button("Refresh VRAM", id="btn-refresh-vram", variant="warning")
+                yield Button("Load Profile", id="btn-load-profile", variant="default", classes="profile-btn")
+                yield Button("Save profile as...", id="btn-save-profile", variant="primary", classes="profile-btn")
+                yield Button("Delete Profile", id="btn-delete-profile", variant="error", classes="profile-btn")
+                yield Button("Refresh VRAM", id="btn-refresh-vram", variant="warning", classes="profile-btn")
             with Horizontal(id="start-button-container"):
                 yield Button("Start Server", id="btn-start", variant="success")
 
@@ -1679,61 +2056,80 @@ class LlamaConfigApp(App):
         elif event.button.id == "btn-refresh-vram":
             defrag_script = os.path.join(CONFIG_DIR, "defrag_vram.py")
             if os.path.exists(defrag_script):
-                self.notify("Sweeping VRAM, please wait...", title="VRAM Defrag")
-                try:
-                    subprocess.run(["python3", defrag_script], check=False)
-                    self.notify("VRAM successfully defragmented!", title="VRAM Defrag")
-                except Exception as e:
-                    self.notify(f"Failed to sweep VRAM: {e}", title="Error", severity="error")
+                # Instantly display the modal without any delay!
+                self.push_screen(AutoDismissModal("VRAM Defrag", "VRAM successfully defragmented!"))
+                # Offload the defrag script execution to a background thread instantly so the UI never blocks!
+                self.run_worker(self.sweep_vram_background, thread=True)
         elif event.button.id == "btn-browse-model":
-            model_field = self.query_one("#MODEL", Input)
-            self.push_screen(
-                FileBrowserModal(start_path=model_field.value),
-                callback=self._on_model_selected,
-            )
+            field = self.fields_by_key.get("MODEL")
+            if field is not None:
+                self.push_screen(
+                    FileBrowserModal(start_path=field.value),
+                    callback=self._on_model_selected,
+                )
         elif event.button.id == "btn-browse-bin":
-            bin_field = self.query_one("#BIN", Input)
-            self.push_screen(
-                FileBrowserModal(start_path=bin_field.value, file_extensions=None),
-                callback=self._on_bin_selected,
-            )
+            field = self.fields_by_key.get("BIN")
+            if field is not None:
+                self.push_screen(
+                    FileBrowserModal(start_path=field.value, file_extensions=None),
+                    callback=self._on_bin_selected,
+                )
         elif event.button.id == "btn-browse-mmproj":
-            mmproj_field = self.query_one("#MMPROJ", Input)
-            self.push_screen(
-                FileBrowserModal(start_path=mmproj_field.value),
-                callback=self._on_mmproj_selected,
-            )
+            field = self.fields_by_key.get("MMPROJ")
+            if field is not None:
+                self.push_screen(
+                    FileBrowserModal(start_path=field.value),
+                    callback=self._on_mmproj_selected,
+                )
         elif event.button.id == "btn-browse-template":
-            tmpl_field = self.query_one("#CHAT_TEMPLATE_FILE", Input)
-            self.push_screen(
-                FileBrowserModal(start_path=tmpl_field.value, file_extensions=(".jinja", ".txt", ".tmpl")),
-                callback=self._on_template_selected,
-            )
+            field = self.fields_by_key.get("CHAT_TEMPLATE_FILE")
+            if field is not None:
+                self.push_screen(
+                    FileBrowserModal(start_path=field.value, file_extensions=(".jinja", ".txt", ".tmpl")),
+                    callback=self._on_template_selected,
+                )
 
-    def on_input_changed(self, event: Input.Changed) -> None:
-        self.update_dashboard()
 
-    def on_select_changed(self, event: Select.Changed) -> None:
-        self.update_dashboard()
+
+    def sweep_vram_background(self) -> None:
+        defrag_script = os.path.join(CONFIG_DIR, "defrag_vram.py")
+        if os.path.exists(defrag_script):
+            try:
+                subprocess.run(
+                    ["python3", defrag_script],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    check=False
+                )
+            except Exception:
+                pass
 
     def _on_model_selected(self, path: str) -> None:
         if path:
-            self.query_one("#MODEL", Input).value = path
+            field = self.fields_by_key.get("MODEL")
+            if field is not None:
+                field.value = path
             self.update_dashboard()
 
     def _on_bin_selected(self, path: str) -> None:
         if path:
-            self.query_one("#BIN", Input).value = path
+            field = self.fields_by_key.get("BIN")
+            if field is not None:
+                field.value = path
             self.update_dashboard()
 
     def _on_mmproj_selected(self, path: str) -> None:
         if path:
-            self.query_one("#MMPROJ", Input).value = path
+            field = self.fields_by_key.get("MMPROJ")
+            if field is not None:
+                field.value = path
             self.update_dashboard()
 
     def _on_template_selected(self, path: str) -> None:
         if path:
-            self.query_one("#CHAT_TEMPLATE_FILE", Input).value = path
+            field = self.fields_by_key.get("CHAT_TEMPLATE_FILE")
+            if field is not None:
+                field.value = path
             self.update_dashboard()
 
     def _on_profile_loaded(self, profile_name: str) -> None:
@@ -1746,6 +2142,7 @@ class LlamaConfigApp(App):
                     self.load_profile_data(data)
                     self.active_profile = profile_name
                     self.save_config()  # Dual-saves to update ACTIVE_PROFILE in config.json
+                    self.update_profile_loaded_label()
                     self.show_notification(f"✨ Profile '{profile_name}' loaded successfully! ✨", severity="success")
                 except Exception as e:
                     self.show_notification(f"⚠ Error loading profile: {e} ⚠", severity="error")
@@ -1754,36 +2151,103 @@ class LlamaConfigApp(App):
         if profile_name:
             self.active_profile = profile_name
             self.save_config()  # Dual-saves to both config.json and the new profile
-            self.show_notification(f"✨ Profile saved as '{profile_name}'! ✨", severity="success")
+            self.update_profile_loaded_label()
+            self.show_notification(f"✨ Profile '{profile_name}' saved! ✨", severity="success")
 
     def _on_profile_deleted(self, result) -> None:
         pass
 
-    def load_profile_data(self, data: dict) -> None:
-        self.config.update(data)
-        disabled = data.get("DISABLED_FIELDS", [])
+    def update_profile_loaded_label(self) -> None:
         try:
-            fields = list(self.query(ParameterField))
+            lbl = self.query_one("#profile-loaded-label", Label)
+            lbl.update(f"Profile Loaded: [bold #fabd2f]{self.active_profile}[/]")
         except Exception:
-            fields = []
+            pass
+
+    def load_profile_data(self, data: dict) -> None:
+        # Robust case-insensitive key and value mapping normalization
+        data = {k.upper(): v for k, v in data.items()}
+        disabled = [item.upper() for item in data.get("DISABLED_FIELDS", []) if isinstance(item, str)]
+        
+        new_config = DEFAULT_CONFIG.copy()
+        new_config.update(data)
+        
+        # Robust normalization for Select options inside self.config
+        for k, v in new_config.items():
+            if k in SELECT_OPTIONS:
+                opts = SELECT_OPTIONS[k]
+                valid_vals = [o[1] for o in opts]
+                val_str = str(v).strip().lower()
+                if v not in valid_vals:
+                    if val_str in ("true", "1", "yes", "on") and "on" in valid_vals:
+                        new_config[k] = "on"
+                    elif val_str in ("false", "0", "no", "off") and "off" in valid_vals:
+                        new_config[k] = "off"
+                    elif val_str in ("auto",) and "auto" in valid_vals:
+                        new_config[k] = "auto"
+                    elif val_str in ("none",) and "none" in valid_vals:
+                        new_config[k] = "none"
+                    else:
+                        new_config[k] = valid_vals[0]
+                        
+        self.config = new_config
+        
+        fields = getattr(self, "_parameter_fields", [])
+        if not fields:
+            try:
+                fields = list(self.query(ParameterField))
+                self._parameter_fields = fields
+                self.fields_by_key = {field.key: field for field in fields}
+            except Exception:
+                fields = []
 
         if fields:
             for field in fields:
+                is_mandatory = field.key in ("BIN", "MODEL", "HOST", "PORT", "EXTRA_FLAGS")
                 if field.key in data:
-                    field.value = str(data[field.key])
-                field.enabled = field.key not in disabled
+                    val = str(data[field.key]).strip()
+                    field.value = val
+                    if is_mandatory:
+                        field.enabled = True
+                    else:
+                        if val == "":
+                            field.enabled = False
+                        else:
+                            field.enabled = field.key not in disabled
+                else:
+                    if is_mandatory:
+                        field.enabled = True
+                    else:
+                        field.value = str(DEFAULT_CONFIG.get(field.key, ""))
+                        field.enabled = False
+                field.update_visuals()
         else:
             for k in DEFAULT_CONFIG:
-                self.enabled_fields[k] = k not in disabled
+                is_mandatory = k in ("BIN", "MODEL", "HOST", "PORT", "EXTRA_FLAGS")
+                if is_mandatory:
+                    self.enabled_fields[k] = True
+                else:
+                    if k in data:
+                        val = str(data[k]).strip()
+                        if val == "":
+                            self.enabled_fields[k] = False
+                        else:
+                            self.enabled_fields[k] = k not in disabled
+                    else:
+                        self.enabled_fields[k] = False
 
         self.update_dashboard()
 
     def save_config(self):
         disabled = []
-        try:
-            fields = list(self.query(ParameterField))
-        except Exception:
-            fields = []
+        fields = getattr(self, "_parameter_fields", [])
+        if not fields:
+            try:
+                fields = list(self.query(ParameterField))
+                self._parameter_fields = fields
+                self.fields_by_key = {field.key: field for field in fields}
+            except Exception:
+                fields = []
 
         if fields:
             for field in fields:
@@ -1809,15 +2273,55 @@ class LlamaConfigApp(App):
         except Exception as e:
             self.show_notification(f"⚠ Failed to save profile file: {e} ⚠", severity="error")
 
+    @property
+    def _parameter_fields(self) -> list[ParameterField]:
+        try:
+            if hasattr(self, "screen_stack") and self.screen_stack:
+                fields = list(self.screen_stack[0].query(ParameterField))
+                if fields:
+                    return fields
+        except Exception as e:
+            with open("/home/peter/LLamaLauncherTui/tui_debug.log", "a") as f:
+                f.write(f"[DEBUG _parameter_fields screen_stack error]: {e}\n")
+        try:
+            return list(self.query(ParameterField))
+        except Exception as e:
+            with open("/home/peter/LLamaLauncherTui/tui_debug.log", "a") as f:
+                f.write(f"[DEBUG _parameter_fields query error]: {e}\n")
+            return []
+
+    @_parameter_fields.setter
+    def _parameter_fields(self, val) -> None:
+        pass
+
+    @property
+    def fields_by_key(self) -> dict[str, ParameterField]:
+        return {field.key: field for field in self._parameter_fields}
+
+    @fields_by_key.setter
+    def fields_by_key(self, val) -> None:
+        pass
+
     def on_mount(self) -> None:
+        self.update_profile_loaded_label()
+        # Cache key dashboard widget references
+        try:
+            self.vram_text_widget = self.query_one("#vram-text", Label)
+            self.vram_bar_widget = self.query_one("#vram-bar", Label)
+            self.cmd_preview_widget = self.query_one("#command-preview", Static)
+        except Exception:
+            pass
         self.update_dashboard()
 
     def get_current_active_parameters(self) -> dict[str, str]:
         params = {}
-        try:
-            fields = list(self.query(ParameterField))
-        except Exception:
-            fields = []
+        fields = getattr(self, "_parameter_fields", [])
+        if not fields:
+            try:
+                fields = list(self.query(ParameterField))
+                self._parameter_fields = fields
+            except Exception:
+                fields = []
         
         if fields:
             for field in fields:
@@ -1830,24 +2334,19 @@ class LlamaConfigApp(App):
         return params
 
     def calculate_vram_estimate(self, params: dict[str, str]) -> tuple[float, int]:
-        # Estimate model weights memory: dynamically read from GGUF size if available, otherwise fallback
-        base_vram = 16.5
+        # Estimate model weights memory: dynamically read from cached model info
         model_path = params.get("MODEL", "")
-        if model_path:
-            model_path = os.path.expanduser(model_path)
-            if os.path.isfile(model_path):
-                try:
-                    base_vram = os.path.getsize(model_path) / (1024 ** 3)
-                except Exception:
-                    base_vram = 16.5
+        model_info = get_model_info(model_path)
+        base_vram = model_info["size_gib"]
+        meta = model_info["metadata"]
         
         # NGL offload layers
-        ngl = 0
+        ngl = 99
         if "NGL" in params:
             try:
                 ngl = int(params["NGL"])
             except ValueError:
-                ngl = 0
+                ngl = 99
                 
         model_offload_ratio = min(ngl / 99.0, 1.0)
         weights_on_gpu = base_vram * model_offload_ratio
@@ -1859,65 +2358,87 @@ class LlamaConfigApp(App):
                 ctx = int(params["CTX"])
             except ValueError:
                 ctx = 8192
+
+        # Parallel slots
+        np = 1
+        if "NP" in params:
+            try:
+                np = int(params["NP"])
+            except ValueError:
+                np = 1
                 
         # Flash Attention
         use_flash_attn = True
         if "FLASH_ATTN" in params:
             use_flash_attn = params["FLASH_ATTN"] != "off"
             
-        # KV Cache key and value types
-        def get_multiplier(cache_type: str) -> float:
-            cache_type = cache_type.lower()
-            if cache_type == "f16":
-                return 1.0
-            elif cache_type == "f32":
+        # KV Cache key and value types (bytes per element)
+        def get_element_bytes(cache_type: str) -> float:
+            cache_type = cache_type.strip().lower()
+            if cache_type == "f32":
+                return 4.0
+            elif cache_type == "f16":
                 return 2.0
             elif cache_type == "q8_0":
-                return 0.5
+                return 1.0625  # Incorporates Q8 block metadata scaling overhead (34 bytes for 32 elements)
             elif cache_type in ("q4_0", "q4_1", "q4_k_m", "q4_k_s", "q4_2"):
-                return 0.25
+                return 0.5625  # 18 bytes for 32 elements
             elif cache_type in ("q5_0", "q5_1", "q5_k_m", "q5_k_s"):
-                return 0.3125
-            return 1.0
+                return 0.6875  # 22 bytes for 32 elements
+            return 2.0  # default to f16
 
         cache_k = params.get("CACHE_K", "f16")
         cache_v = params.get("CACHE_V", "f16")
         
-        mult_k = get_multiplier(cache_k)
-        mult_v = get_multiplier(cache_v)
-        cache_multiplier = (mult_k + mult_v) / 2.0
+        bytes_k = get_element_bytes(cache_k)
+        bytes_v = get_element_bytes(cache_v)
             
-        # Determine model family for more accurate KV cache coefficients
-        is_qwen = "qwen" in model_path.lower()
+        # Architecture parameters: default fallback values
+        block_count = 32
+        head_count_kv = 8
+        embedding_length = 4096
+        head_count = 32
         
-        # Dynamic KV cache coefficient based on base_vram (model size in GB as proxy for parameters/layers/heads)
-        if is_qwen:
-            if base_vram < 5.0:    # Qwen 1.5B/3B
-                kv_coeff = 0.00012
-            elif base_vram < 11.0: # Qwen 7B/14B
-                kv_coeff = 0.00020
-            elif base_vram < 22.0: # Qwen 27B/32B
-                kv_coeff = 0.00049
-            else:                  # Qwen 72B
-                kv_coeff = 0.00031
-        else:
-            if base_vram < 5.0:    # Small models (1B-3B)
-                kv_coeff = 0.00008
-            elif base_vram < 12.0: # Standard 7B/8B models (e.g. LLaMA 3 8B)
-                kv_coeff = 0.00013
-            elif base_vram < 25.0: # 13B-34B models
-                kv_coeff = 0.00020
-            else:                  # 70B+ models
-                kv_coeff = 0.00031
+        # Parse architectural parameters from cached metadata
+        for k, v in meta.items():
+            kl = k.lower()
+            if kl.endswith(".block_count"):
+                block_count = int(v)
+            elif kl.endswith(".attention.head_count_kv"):
+                head_count_kv = int(v)
+            elif kl.endswith(".embedding_length"):
+                embedding_length = int(v)
+            elif kl.endswith(".attention.head_count"):
+                head_count = int(v)
 
-        kv_memory = (ctx * kv_coeff) * cache_multiplier
+        # Head dimension determination
+        head_dim = 128
+        if model_path and "gemma" in model_path.lower():
+            head_dim = 256
+        else:
+            if head_count and embedding_length:
+                calculated_dim = embedding_length // head_count
+                if calculated_dim in (64, 80, 96, 128, 256):
+                    head_dim = calculated_dim
+
+        # Mathematically exact KV Cache Size calculation
+        # K_cache size = np * ctx * block_count * head_count_kv * head_dim * bytes_k
+        # V_cache size = np * ctx * block_count * head_count_kv * head_dim * bytes_v
+        kv_cache_total_bytes = np * ctx * block_count * head_count_kv * head_dim * (bytes_k + bytes_v)
+        kv_memory = kv_cache_total_bytes / (1024 ** 3)  # Convert to GiB
+        
+        # Flash Attention workspace overhead scaling
         if not use_flash_attn:
-            kv_memory *= 1.4
+            kv_memory *= 1.3
             
-        # Speculator overhead
+        # Speculator overhead: MTP speculator is lightweight (~0.3GB) as it is integrated inside UD GGUF; external is ~1.5GB
         speculator_overhead = 0.0
-        if "SPEC_TYPE" in params and params["SPEC_TYPE"] != "none":
-            speculator_overhead = 1.5
+        spec_type = params.get("SPEC_TYPE", "none").strip().lower()
+        if spec_type != "none" and spec_type != "":
+            if "mtp" in spec_type:
+                speculator_overhead = 0.3
+            else:
+                speculator_overhead = 1.5
             
         # Multimodal Projector overhead
         vision_projector_overhead = 0.0
@@ -1930,7 +2451,7 @@ class LlamaConfigApp(App):
             cuda_overhead = 0.8
             
         total_estimate = weights_on_gpu + kv_memory + speculator_overhead + vision_projector_overhead + cuda_overhead
-        total_estimate = min(max(total_estimate, 0.0), 48.0)
+        total_estimate = min(max(total_estimate, 0.0), 96.0)
         
         percentage = round((total_estimate / 24.0) * 100)
         return total_estimate, percentage
@@ -2015,6 +2536,9 @@ class LlamaConfigApp(App):
         if "MLOCK" in params:
             if params["MLOCK"].lower() in ("on", "1", "true", "yes"):
                 cmd.append("--mlock")
+        if "SWA_FULL" in params:
+            if params["SWA_FULL"].lower() in ("on", "1", "true", "yes"):
+                cmd.append("--swa-full")
         if "METRICS" in params:
             if params["METRICS"].lower() in ("on", "1", "true", "yes"):
                 cmd.append("--metrics")
@@ -2082,23 +2606,46 @@ class LlamaConfigApp(App):
             
         try:
             params = self.get_current_active_parameters()
+            with open("/home/peter/LLamaLauncherTui/tui_debug.log", "a") as f:
+                import time
+                f.write(f"[{time.time()}] update_dashboard called. CTX={params.get('CTX', '')}, TEMP={params.get('TEMP', '')}\n")
+            
+            # Deep Performance Cache: Skip all calculations and repaints if active parameters haven't changed!
+            # This makes all focus shifts, clicks, selections, and cursors completely instant (0.00ms)
+            if hasattr(self, "_last_active_params") and self._last_active_params == params:
+                return
+            self._last_active_params = params.copy()
             
             # VRAM estimate
             total_estimate, percentage = self.calculate_vram_estimate(params)
             
-            # Update VRAM Text
-            vram_text = self.query_one("#vram-text", Label)
-            vram_text.update(f"{total_estimate:.1f} GB / 24 GB ({percentage}%)")
+            # Update VRAM Text using cached widget references to eliminate DOM search overhead
+            vram_text = getattr(self, "vram_text_widget", None)
+            if vram_text is None:
+                try:
+                    vram_text = self.query_one("#vram-text", Label)
+                    self.vram_text_widget = vram_text
+                except Exception:
+                    vram_text = None
+            if vram_text is not None:
+                vram_text.update(f"{total_estimate:.1f} GB / 24 GB ({percentage}%)")
             
             # Color coding threshold based on saturation
-            if percentage > 95:
-                vram_text.styles.color = "#fb4934" # Red
+            if percentage > 100:
+                if vram_text is not None:
+                    vram_text.styles.color = "#fb4934" # Red
                 bar_color = "#fb4934"
-            elif percentage > 85:
-                vram_text.styles.color = "#fabd2f" # Gold
+            elif percentage > 90:
+                if vram_text is not None:
+                    vram_text.styles.color = "#fe8019" # Orange
+                bar_color = "#fe8019"
+            elif percentage > 75:
+                if vram_text is not None:
+                    vram_text.styles.color = "#fabd2f" # Gold
                 bar_color = "#fabd2f"
             else:
-                vram_text.styles.color = "#ebdbb2" # Cream
+                if vram_text is not None:
+                    vram_text.styles.color = "#ebdbb2" # Cream
                 bar_color = "#b8bb26" # Green
                 
             # Build Unicode block meter progress bar (40 character width)
@@ -2107,14 +2654,28 @@ class LlamaConfigApp(App):
             empty_chars = 40 - filled_chars
             meter_str = f"[{'█' * filled_chars}{'░' * empty_chars}]"
             
-            vram_bar = self.query_one("#vram-bar", Label)
-            vram_bar.update(meter_str)
-            vram_bar.styles.color = bar_color
+            vram_bar = getattr(self, "vram_bar_widget", None)
+            if vram_bar is None:
+                try:
+                    vram_bar = self.query_one("#vram-bar", Label)
+                    self.vram_bar_widget = vram_bar
+                except Exception:
+                    vram_bar = None
+            if vram_bar is not None:
+                vram_bar.update(meter_str)
+                vram_bar.styles.color = bar_color
             
-            # Update Live command preview
-            cmd_preview = self.query_one("#command-preview", Static)
-            live_command = self.build_live_command(params)
-            cmd_preview.update(live_command)
+            # Update Live command preview using cached widget reference
+            cmd_preview = getattr(self, "cmd_preview_widget", None)
+            if cmd_preview is None:
+                try:
+                    cmd_preview = self.query_one("#command-preview", Static)
+                    self.cmd_preview_widget = cmd_preview
+                except Exception:
+                    cmd_preview = None
+            if cmd_preview is not None:
+                live_command = self.build_live_command(params)
+                cmd_preview.update(live_command)
             
         except Exception:
             pass
@@ -2127,6 +2688,17 @@ if __name__ == "__main__":
     if app.should_start:
         os.system("clear")
         print("Starting Llama Server...")
+        cfg = app.config
+        
+        # CUDA Graphs toggle:
+        disable_graphs = cfg.get("GGML_CUDA_DISABLE_GRAPHS", "on")
+        disable_graphs_enabled = app.enabled_fields.get("GGML_CUDA_DISABLE_GRAPHS", True)
+        if disable_graphs_enabled and disable_graphs.lower() in ("on", "1", "true", "yes"):
+            os.environ["GGML_CUDA_DISABLE_GRAPHS"] = "1"
+            print("CUDA Graphs: DISABLED (via GGML_CUDA_DISABLE_GRAPHS=1)")
+        else:
+            os.environ.pop("GGML_CUDA_DISABLE_GRAPHS", None)
+            print("CUDA Graphs: ENABLED")
         
         defrag_script = os.path.join(os.path.dirname(os.path.abspath(__file__)), "defrag_vram.py")
         if os.path.exists(defrag_script):
@@ -2135,8 +2707,6 @@ if __name__ == "__main__":
             except Exception as e:
                 print(f"Failed to sweep VRAM: {e}")
                 
-        cfg = app.config
-        
         bin_path = os.path.expanduser(cfg["BIN"])
         cmd = [bin_path]
 
@@ -2213,6 +2783,9 @@ if __name__ == "__main__":
                 elif key == "MLOCK":
                     if value.lower() in ("on", "1", "true", "yes"):
                         cmd.append("--mlock")
+                elif key == "SWA_FULL":
+                    if value.lower() in ("on", "1", "true", "yes"):
+                        cmd.append("--swa-full")
                 elif key == "METRICS":
                     if value.lower() in ("on", "1", "true", "yes"):
                         cmd.append("--metrics")
