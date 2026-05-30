@@ -7,7 +7,7 @@
 [![UI: Textual](https://img.shields.io/badge/UI-Textual-orange.svg)](https://github.com/Textualize/textual)
 [![Hardware: NVIDIA RTX 4090 Optimized](https://img.shields.io/badge/RTX%204090-Optimized-green.svg)](#)
 
-LLamaLauncherTui is a keyboard-driven terminal interface designed to simplify launching and managing `llama-server` configurations. Calibrated with default settings for the **NVIDIA RTX 4090 (24GB VRAM)** running **Qwen 3.6 (27B) UD-Q4_K_XL**, it allows configuring hardware, context, cache, HTTP, and sampler options in a single consolidated interface.
+LLamaLauncherTui is a personal project I built to simplify launching and managing my `llama-server` configurations through a keyboard-driven terminal interface. It's primarily tailored for my own workflow—calibrated by default for an **NVIDIA RTX 4090 (24GB VRAM)** running **Qwen 3.6 (27B) UD-Q4_K_XL**—but I've made it public in case anyone else finds it useful. Feel free to use it, tweak it, or fork it! It provides a consolidated interface for configuring hardware, context, cache, HTTP, and sampler options.
 
 ```
   ╦  ╦  ╔═╗ ╔╦╗ ╔═╗   ╦  ╔═╗ ╦ ╦ ╔╗╔ ╔═╗ ╦ ╦ ╔═╗ ╦═╗
@@ -19,12 +19,12 @@ LLamaLauncherTui is a keyboard-driven terminal interface designed to simplify la
 
 ## Features
 
-**Gruvbox Styling:** A dark theme interface styled with custom HSL color tokens, compatible with other terminal themes (such as Dracula).\
-**Speculative Decoding (MTP) Support:** Full, native configuration parameters for Qwen 3.6 Multi-Token Prediction (MTP) draft-heads, allowing you to fine-tune `spec-draft-n-max` and probabilities.\
-**Smart Prefix Cache Re-use:** Configurable dynamic prefix prompt caching (`--cache-prompt`) and re-use token bounds (`--cache-reuse`), boosting multi-turn agent chat throughput by up to 22%.\
-**RTX 4090 Hardware Presets:** Pre-calibrated advanced VRAM configuration keys, including `MERGE_QKV`, `MERGE_EXPERTS` (expert matrix merging to conserve VRAM), and smart context checkpoints for massive (>100K) sequences.\
-**Config Toggle Persistence:** Safely uncheck any hardware or sampling parameter inside the UI. Your enabled/disabled states are stored persistently inside `config.json` via a strict `"DISABLED_FIELDS"` key.\
-**Integrated Modal File Browser:** Easily browse and select models (`.gguf`), servers, custom templates, and visual projectors with a single click.
+**Gruvbox Styling:** A dark theme interface styled with custom HSL color tokens, compatible with other terminal themes.\
+**Speculative Decoding (MTP) Support:** Configuration parameters for Qwen 3.6 Multi-Token Prediction (MTP) draft-heads, allowing you to fine-tune `spec-draft-n-max` and probabilities.\
+**Smart Prefix Cache Re-use:** Configurable dynamic prefix prompt caching (`--cache-prompt`) and re-use token bounds (`--cache-reuse`) to speed up multi-turn chats.\
+**RTX 4090 Hardware Presets:** My personal pre-calibrated advanced VRAM configuration keys, including `MERGE_QKV` and `MERGE_EXPERTS`.\
+**Config Toggle Persistence:** Uncheck any hardware or sampling parameter inside the UI, and the states are safely stored in your `config.json`.\
+**Integrated Modal File Browser:** A simple way to browse and select models (`.gguf`), servers, custom templates, and visual projectors.
 
 ---
 
