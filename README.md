@@ -10,10 +10,10 @@ A keyboard-driven terminal user interface (TUI) launcher for `llama-server`. It 
 
 ## Key Highlights
 
-- **Keyboard-Driven**: Fast cursor navigation, checkboxes, and inline directory selectors. Designed to run smoothly inside TMUX or terminal splits without taking your hands off the keyboard.
+- **Keyboard-Driven**: Fast cursor navigation, checkboxes, and inline directory selectors.
 - **Off-Thread I/O**: Directory navigation and GGUF header parsing (block counts, architecture, KV channels) run in background worker threads, keeping the TUI responsive even when loading massive GGUF models.
 - **Zero-Config Bootstrapping**: Automatically creates the profiles directory and sets up a standard default profile on the first run.
-- **Standard Stack**: Written in pure Python and Textual with no bloated layers.
+- **Standard Stack**: Written in pure Python and Textual.
 
 ## Installation and Quick Start
 
