@@ -1,8 +1,8 @@
 # llama-server-tui
 
-This is a terminal UI launcher for llama-server. It simplifies configuring and executing llama-server without needing to manually copy-paste long, convoluted shell commands every time you change models or parameters.
+I built this keyboard-driven terminal UI launcher because I got tired of writing, maintaining, and copy-pasting 50-line `llama-server` shell commands in my terminal every time I wanted to switch models, adjust speculative drafting, or configure KV cache parameters.
 
-The default presets are calibrated for running a speculative decoding setup on a single GPU (specifically tested on an RTX 4090 with Qwen 3.6 27B UD-Q4_K_XL using prompt caching).
+It is a single-script, dependency-free (except for `textual`) dashboard that maps standard JSON configs directly to official `llama.cpp` server processes.
 
 ```
   ╦  ╦  ╔═╗ ╔╦╗ ╔═╗   ╦  ╔═╗ ╦ ╦ ╔╗╔ ╔═╗ ╦ ╦ ╔═╗ ╦═╗
@@ -10,14 +10,12 @@ The default presets are calibrated for running a speculative decoding setup on a
   ╩═╝╩═╝╩ ╩ ╩ ╩ ╩ ╩   ╩═╝╩ ╩ ╚═╝ ╝╚╝ ╚═╝ ╩ ╩ ╚═╝ ╩╚═
 ```
 
-## How It Works
+## Key Highlights
 
-The launcher loads, displays, and saves configuration parameters from a local config.json file. When launching, it configures environment variables (such as disabling CUDA Graphs or enabling Unified Memory) and spawns llama-server as a subprocess.
-
-* Gruvbox Palette: A clean, hardcoded styling matching dark terminal palettes.
-* Parameter Configuration: Keyboard-driven toggles and fields for model performance parameters (like DRY, XTC, and Reasoning options).
-* Directory Browser: Built-in minimal path picker to easily locate GGUF models and the server binary.
-* Clean Architecture: Pure Python built on top of the Textual library. No bloated enterprise frameworks.
+- **Keyboard-Driven Efficiency**: Fast cursor navigation, checkboxes, and inline directory selectors. Designed to run smoothly inside TMUX or terminal splits without taking your hands off the keyboard.
+- **Zero UI Thread Locks**: File system navigation and GGUF header parsing (block counts, architecture type, KV channels) are executed off-thread in background workers, ensuring the UI remains highly responsive even when loading massive >15GB models.
+- **Resilient Self-Bootstrapping**: On the first execution, the script dynamically creates its own `./profiles/` directory and writes a generic, clean default preset based on your local machine standards.
+- **Zero Corporate Bloat**: Written in pure, clean Python utilizing standard Textual widgets and the Python standard library.
 
 ## Installation and Setup
 
@@ -37,7 +35,7 @@ Before running the application, you must set up your local configuration:
    ```bash
    cp config.json.example config.json
    ```
-2. Edit config.json to match your local paths (specifically BIN for the llama-server binary path and MODEL for your default GGUF model path).
+2. Edit `config.json` to match your local paths (specifically `BIN` for your `llama-server` binary path and `MODEL` for your default GGUF model path).
 
 ### Running the Launcher
 
@@ -59,7 +57,7 @@ The launcher ships with pre-calibrated, high-performance default configurations 
 
 - **High-Throughput Speculative Engine (`draft-mtp`)**: Pre-configured with Multi-Token Prediction (MTP) draft max count set to `3` and min probability threshold `0.15` for extremely high inference speeds (~90-100+ tokens/second).
 - **Quantized KV Cache (`q8_0` / `q8_0`)**: Quantizes context keys and values to 8-bit to ensure optimal VRAM consumption even under large context windows.
-- **CUDA Graphs & Flash Attention**: Combines Flash Attention (`on`) with graph-safe defaults (`GGML_CUDA_DISABLE_GRAPHS=1`) to guarantee perfect driver stability under Ada Lovelace architectures when running low-bit attention caches.
+- **CUDA Graphs & Flash Attention**: Combines Flash Attention (`on`) with active CUDA Graphs (disabled graphs: `off`) to leverage modern Ada Lovelace kernel optimizations for peak generation throughput.
 - **Jinja Reasoning**: Enables Jinja prompt template parsing (`on`) and pre-configures JSON template arguments (`preserve_thinking: true`) to natively retain thinking traces for agentic/reasoning models.
 
 ## Configuration File Structure
@@ -83,8 +81,8 @@ Your local `config.json` maps parameter keys directly to command-line flags. Bel
     "SPEC_MIN": "0.15",
     "JINJA": "on",
     "WEBUI": "on",
-    "SWA_FULL": "on",
-    "GGML_CUDA_DISABLE_GRAPHS": "on",
+    "SWA_FULL": "off",
+    "GGML_CUDA_DISABLE_GRAPHS": "off",
     "DISABLED_FIELDS": [
         "API_KEY",
         "THREADS",
