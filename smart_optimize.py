@@ -7,9 +7,9 @@ import os
 import sys
 
 # Paths
-DEFAULT_PROFILE_PATH = "/home/peter/LLamaLauncherTui/profiles/default.json"
-CONFIG_PATH = "/home/peter/LLamaLauncherTui/config.json"
-REPORT_PATH = "/home/peter/.gemini/antigravity-cli/brain/ff8afdab-d0f0-4e5b-8227-236ebb61901b/optimization_report.md"
+DEFAULT_PROFILE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "profiles", "default.json")
+CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.json")
+REPORT_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "optimization_report.md")
 
 def load_json(path):
     if os.path.exists(path):

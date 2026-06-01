@@ -1261,7 +1261,7 @@
             <div class="modal-body">
                 <div class="file-browser-cwd">
                     <span>Directory:</span>
-                    <span id="fb-cwd-path">/home/peter/models</span>
+                    <span id="fb-cwd-path">/home/user/models</span>
                 </div>
                 <div class="file-list" id="fb-files-grid">
                     <!-- Directory rows generated dynamically -->
@@ -1283,7 +1283,7 @@
             <!-- Simulated stdout logs -->
         </div>
         <div class="term-footer">
-            <span style="color: var(--gray); font-size: 11px;">Listening at: http://10.0.0.2:8000 | CLI Terminated PID 284902</span>
+            <span style="color: var(--gray); font-size: 11px;">Listening at: http://127.0.0.1:8000 | CLI Terminated PID 284902</span>
         </div>
     </div>
 
@@ -1497,7 +1497,7 @@
         const DEFAULT_PROFILES = {
             "default": {
                 "BIN": "~/llama.cpp/build/bin/llama-server",
-                "MODEL": "/home/peter/.cache/huggingface/hub/models--unsloth--Qwen3.6-27B-MTP-GGUF/snapshots/84362f6d157c935ba13228710689cce2922e408a/Qwen3.6-27B-UD-Q4_K_XL.gguf",
+                "MODEL": "/home/user/.cache/huggingface/hub/models--unsloth--Qwen3.6-27B-MTP-GGUF/snapshots/84362f6d157c935ba13228710689cce2922e408a/Qwen3.6-27B-UD-Q4_K_XL.gguf",
                 "HOST": "127.0.0.1",
                 "PORT": "8080",
                 "NGL": "99",
@@ -1507,8 +1507,8 @@
             },
             "rtx-4090-max": {
                 "BIN": "~/llama.cpp/build/bin/llama-server",
-                "MODEL": "/home/peter/models/Qwen3.6-27B-UD-Q4_K_XL.gguf",
-                "HOST": "10.0.0.2",
+                "MODEL": "/home/user/models/Qwen3.6-27B-UD-Q4_K_XL.gguf",
+                "HOST": "127.0.0.1",
                 "PORT": "8000",
                 "NGL": "99",
                 "CTX": "150000",
@@ -1532,8 +1532,8 @@
             },
             "qwen-speculative": {
                 "BIN": "~/llama.cpp/build/bin/llama-server",
-                "MODEL": "/home/peter/.cache/huggingface/hub/models--unsloth--Qwen3.6-27B-MTP-GGUF/snapshots/84362f6d157c935ba13228710689cce2922e408a/Qwen3.6-27B-UD-Q4_K_XL.gguf",
-                "HOST": "10.0.0.2",
+                "MODEL": "/home/user/.cache/huggingface/hub/models--unsloth--Qwen3.6-27B-MTP-GGUF/snapshots/84362f6d157c935ba13228710689cce2922e408a/Qwen3.6-27B-UD-Q4_K_XL.gguf",
+                "HOST": "127.0.0.1",
                 "PORT": "8000",
                 "NGL": "99",
                 "CTX": "150000",
@@ -1577,56 +1577,56 @@
 
         // File Browser simulated filesystem paths
         const SIMULATED_FILESYSTEM = {
-            "/home/peter": [
-                { type: "dir", name: "models", path: "/home/peter/models" },
-                { type: "dir", name: "llama.cpp", path: "/home/peter/llama.cpp" },
-                { type: "dir", name: ".cache", path: "/home/peter/.cache" },
-                { type: "file", name: "llama-server-start", path: "/home/peter/llama-server-start" }
+            "/home/user": [
+                { type: "dir", name: "models", path: "/home/user/models" },
+                { type: "dir", name: "llama.cpp", path: "/home/user/llama.cpp" },
+                { type: "dir", name: ".cache", path: "/home/user/.cache" },
+                { type: "file", name: "llama-server-start", path: "/home/user/llama-server-start" }
             ],
-            "/home/peter/models": [
-                { type: "dir", name: ".. (Parent)", path: "/home/peter" },
-                { type: "file", name: "Qwen3.6-27B-UD-Q4_K_XL.gguf", path: "/home/peter/models/Qwen3.6-27B-UD-Q4_K_XL.gguf" },
-                { type: "file", name: "Qwen3.6-1.5B-MTP-Draft.GGUF", path: "/home/peter/models/Qwen3.6-1.5B-MTP-Draft.GGUF" },
-                { type: "file", name: "Llama-3-8B-Instruct-Q8.gguf", path: "/home/peter/models/Llama-3-8B-Instruct-Q8.gguf" },
-                { type: "file", name: "qwen2-vl-7b-proj.gguf", path: "/home/peter/models/qwen2-vl-7b-proj.gguf" }
+            "/home/user/models": [
+                { type: "dir", name: ".. (Parent)", path: "/home/user" },
+                { type: "file", name: "Qwen3.6-27B-UD-Q4_K_XL.gguf", path: "/home/user/models/Qwen3.6-27B-UD-Q4_K_XL.gguf" },
+                { type: "file", name: "Qwen3.6-1.5B-MTP-Draft.GGUF", path: "/home/user/models/Qwen3.6-1.5B-MTP-Draft.GGUF" },
+                { type: "file", name: "Llama-3-8B-Instruct-Q8.gguf", path: "/home/user/models/Llama-3-8B-Instruct-Q8.gguf" },
+                { type: "file", name: "qwen2-vl-7b-proj.gguf", path: "/home/user/models/qwen2-vl-7b-proj.gguf" }
             ],
-            "/home/peter/llama.cpp": [
-                { type: "dir", name: ".. (Parent)", path: "/home/peter" },
-                { type: "dir", name: "build", path: "/home/peter/llama.cpp/build" },
-                { type: "dir", name: "prompts", path: "/home/peter/llama.cpp/prompts" }
+            "/home/user/llama.cpp": [
+                { type: "dir", name: ".. (Parent)", path: "/home/user" },
+                { type: "dir", name: "build", path: "/home/user/llama.cpp/build" },
+                { type: "dir", name: "prompts", path: "/home/user/llama.cpp/prompts" }
             ],
-            "/home/peter/llama.cpp/build": [
-                { type: "dir", name: ".. (Parent)", path: "/home/peter/llama.cpp" },
-                { type: "dir", name: "bin", path: "/home/peter/llama.cpp/build/bin" }
+            "/home/user/llama.cpp/build": [
+                { type: "dir", name: ".. (Parent)", path: "/home/user/llama.cpp" },
+                { type: "dir", name: "bin", path: "/home/user/llama.cpp/build/bin" }
             ],
-            "/home/peter/llama.cpp/build/bin": [
-                { type: "dir", name: ".. (Parent)", path: "/home/peter/llama.cpp/build" },
-                { type: "file", name: "llama-server", path: "/home/peter/llama.cpp/build/bin/llama-server" },
-                { type: "file", name: "llama-cli", path: "/home/peter/llama.cpp/build/bin/llama-cli" }
+            "/home/user/llama.cpp/build/bin": [
+                { type: "dir", name: ".. (Parent)", path: "/home/user/llama.cpp/build" },
+                { type: "file", name: "llama-server", path: "/home/user/llama.cpp/build/bin/llama-server" },
+                { type: "file", name: "llama-cli", path: "/home/user/llama.cpp/build/bin/llama-cli" }
             ],
-            "/home/peter/.cache": [
-                { type: "dir", name: ".. (Parent)", path: "/home/peter" },
-                { type: "dir", name: "huggingface", path: "/home/peter/.cache/huggingface" }
+            "/home/user/.cache": [
+                { type: "dir", name: ".. (Parent)", path: "/home/user" },
+                { type: "dir", name: "huggingface", path: "/home/user/.cache/huggingface" }
             ],
-            "/home/peter/.cache/huggingface": [
-                { type: "dir", name: ".. (Parent)", path: "/home/peter/.cache" },
-                { type: "dir", name: "hub", path: "/home/peter/.cache/huggingface/hub" }
+            "/home/user/.cache/huggingface": [
+                { type: "dir", name: ".. (Parent)", path: "/home/user/.cache" },
+                { type: "dir", name: "hub", path: "/home/user/.cache/huggingface/hub" }
             ],
-            "/home/peter/.cache/huggingface/hub": [
-                { type: "dir", name: ".. (Parent)", path: "/home/peter/.cache/huggingface" },
-                { type: "dir", name: "models--unsloth--Qwen3.6-27B-MTP-GGUF", path: "/home/peter/.cache/huggingface/hub/models--unsloth--Qwen3.6-27B-MTP-GGUF" }
+            "/home/user/.cache/huggingface/hub": [
+                { type: "dir", name: ".. (Parent)", path: "/home/user/.cache/huggingface" },
+                { type: "dir", name: "models--unsloth--Qwen3.6-27B-MTP-GGUF", path: "/home/user/.cache/huggingface/hub/models--unsloth--Qwen3.6-27B-MTP-GGUF" }
             ],
-            "/home/peter/.cache/huggingface/hub/models--unsloth--Qwen3.6-27B-MTP-GGUF": [
-                { type: "dir", name: ".. (Parent)", path: "/home/peter/.cache/huggingface/hub" },
-                { type: "dir", name: "snapshots", path: "/home/peter/.cache/huggingface/hub/models--unsloth--Qwen3.6-27B-MTP-GGUF/snapshots" }
+            "/home/user/.cache/huggingface/hub/models--unsloth--Qwen3.6-27B-MTP-GGUF": [
+                { type: "dir", name: ".. (Parent)", path: "/home/user/.cache/huggingface/hub" },
+                { type: "dir", name: "snapshots", path: "/home/user/.cache/huggingface/hub/models--unsloth--Qwen3.6-27B-MTP-GGUF/snapshots" }
             ],
-            "/home/peter/.cache/huggingface/hub/models--unsloth--Qwen3.6-27B-MTP-GGUF/snapshots": [
-                { type: "dir", name: ".. (Parent)", path: "/home/peter/.cache/huggingface/hub/models--unsloth--Qwen3.6-27B-MTP-GGUF" },
-                { type: "dir", name: "84362f6d157c935ba13228710689cce2922e408a", path: "/home/peter/.cache/huggingface/hub/models--unsloth--Qwen3.6-27B-MTP-GGUF/snapshots/84362f6d157c935ba13228710689cce2922e408a" }
+            "/home/user/.cache/huggingface/hub/models--unsloth--Qwen3.6-27B-MTP-GGUF/snapshots": [
+                { type: "dir", name: ".. (Parent)", path: "/home/user/.cache/huggingface/hub/models--unsloth--Qwen3.6-27B-MTP-GGUF" },
+                { type: "dir", name: "84362f6d157c935ba13228710689cce2922e408a", path: "/home/user/.cache/huggingface/hub/models--unsloth--Qwen3.6-27B-MTP-GGUF/snapshots/84362f6d157c935ba13228710689cce2922e408a" }
             ],
-            "/home/peter/.cache/huggingface/hub/models--unsloth--Qwen3.6-27B-MTP-GGUF/snapshots/84362f6d157c935ba13228710689cce2922e408a": [
-                { type: "dir", name: ".. (Parent)", path: "/home/peter/.cache/huggingface/hub/models--unsloth--Qwen3.6-27B-MTP-GGUF/snapshots" },
-                { type: "file", name: "Qwen3.6-27B-UD-Q4_K_XL.gguf", path: "/home/peter/.cache/huggingface/hub/models--unsloth--Qwen3.6-27B-MTP-GGUF/snapshots/84362f6d157c935ba13228710689cce2922e408a/Qwen3.6-27B-UD-Q4_K_XL.gguf" }
+            "/home/user/.cache/huggingface/hub/models--unsloth--Qwen3.6-27B-MTP-GGUF/snapshots/84362f6d157c935ba13228710689cce2922e408a": [
+                { type: "dir", name: ".. (Parent)", path: "/home/user/.cache/huggingface/hub/models--unsloth--Qwen3.6-27B-MTP-GGUF/snapshots" },
+                { type: "file", name: "Qwen3.6-27B-UD-Q4_K_XL.gguf", path: "/home/user/.cache/huggingface/hub/models--unsloth--Qwen3.6-27B-MTP-GGUF/snapshots/84362f6d157c935ba13228710689cce2922e408a/Qwen3.6-27B-UD-Q4_K_XL.gguf" }
             ]
         };
 
@@ -1637,7 +1637,7 @@
         let activeBrowseTarget = "";
         let deleteCandidate = "";
         let customProfiles = {};
-        let currentCwd = "/home/peter/models";
+        let currentCwd = "/home/user/models";
 
         // Load custom profiles from localStorage if present
         function initStorage() {
@@ -2084,7 +2084,7 @@
             // Get binary path
             let bin = activeConfig["BIN"] || "~/llama.cpp/build/bin/llama-server";
             // Escape/normalize path
-            bin = bin.replace("~", "/home/peter");
+            bin = bin.replace("~", "/home/user");
             cmd.push(bin);
 
             // Populate mapping flags
@@ -2380,11 +2380,11 @@
             
             // Set contextual directory paths
             if (fieldKey === "BIN") {
-                currentCwd = "/home/peter/llama.cpp/build/bin";
+                currentCwd = "/home/user/llama.cpp/build/bin";
             } else if (fieldKey === "MODEL" || fieldKey === "MMPROJ") {
-                currentCwd = "/home/peter/models";
+                currentCwd = "/home/user/models";
             } else {
-                currentCwd = "/home/peter";
+                currentCwd = "/home/user";
             }
 
             renderFileBrowserList();

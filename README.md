@@ -1,13 +1,8 @@
-# 🦙 LLamaLauncherTui
+# llama-server-tui
 
-> A keyboard-driven Textual User Interface (TUI) launcher for `llama-server`.
+This is a terminal UI launcher for llama-server. It simplifies configuring and executing llama-server without needing to manually copy-paste long, convoluted shell commands every time you change models or parameters.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python: 3.8+](https://img.shields.io/badge/Python-3.8%2B-blue.svg)](https://www.python.org/)
-[![UI: Textual](https://img.shields.io/badge/UI-Textual-orange.svg)](https://github.com/Textualize/textual)
-[![Hardware: NVIDIA RTX 4090 Optimized](https://img.shields.io/badge/RTX%204090-Optimized-green.svg)](#)
-
-LLamaLauncherTui is a personal project I built to simplify launching and managing my `llama-server` configurations through a keyboard-driven terminal interface. It's primarily tailored for my own workflow—calibrated by default for an **NVIDIA RTX 4090 (24GB VRAM)** running **Qwen 3.6 (27B) UD-Q4_K_XL**—but I've made it public in case anyone else finds it useful. Feel free to use it, tweak it, or fork it! It provides a consolidated interface for configuring hardware, context, cache, HTTP, and sampler options.
+The default presets are calibrated for running a speculative decoding setup on a single GPU (specifically tested on an RTX 4090 with Qwen 3.6 27B UD-Q4_K_XL using prompt caching).
 
 ```
   ╦  ╦  ╔═╗ ╔╦╗ ╔═╗   ╦  ╔═╗ ╦ ╦ ╔╗╔ ╔═╗ ╦ ╦ ╔═╗ ╦═╗
@@ -15,67 +10,60 @@ LLamaLauncherTui is a personal project I built to simplify launching and managin
   ╩═╝╩═╝╩ ╩ ╩ ╩ ╩ ╩   ╩═╝╩ ╩ ╚═╝ ╝╚╝ ╚═╝ ╩ ╩ ╚═╝ ╩╚═
 ```
 
----
+## How It Works
 
-## Features
+The launcher loads, displays, and saves configuration parameters from a local config.json file. When launching, it configures environment variables (such as disabling CUDA Graphs or enabling Unified Memory) and spawns llama-server as a subprocess.
 
-**Gruvbox Styling:** A dark theme interface styled with custom HSL color tokens, compatible with other terminal themes.\
-**Speculative Decoding (MTP) Support:** Configuration parameters for Qwen 3.6 Multi-Token Prediction (MTP) draft-heads, allowing you to fine-tune `spec-draft-n-max` and probabilities.\
-**Smart Prefix Cache Re-use:** Configurable dynamic prefix prompt caching (`--cache-prompt`) and re-use token bounds (`--cache-reuse`) to speed up multi-turn chats.\
-**RTX 4090 Hardware Presets:** My personal pre-calibrated advanced VRAM configuration keys, including `MERGE_QKV` and `MERGE_EXPERTS`.\
-**Config Toggle Persistence:** Uncheck any hardware or sampling parameter inside the UI, and the states are safely stored in your `config.json`.\
-**Integrated Modal File Browser:** A simple way to browse and select models (`.gguf`), servers, custom templates, and visual projectors.
+* Gruvbox Palette: A clean, hardcoded styling matching dark terminal palettes.
+* Parameter Configuration: Keyboard-driven toggles and fields for model performance parameters (like DRY, XTC, and Reasoning options).
+* Directory Browser: Built-in minimal path picker to easily locate GGUF models and the server binary.
+* Clean Architecture: Pure Python built on top of the Textual library. No bloated enterprise frameworks.
 
----
+## Installation and Setup
 
-## Quick Start
-
-### 1. Requirements
+### Prerequisites
 
 Ensure you have Python 3.8+ and Textual installed:
+
 ```bash
 pip install textual
 ```
 
-*Note: The launcher does not require any other external dependencies.*
+### Setup Configuration
 
-### 2. Setup & Installation
+Before running the application, you must set up your local configuration:
 
-Clone or copy the project into a directory of your choice:
-```bash
-mkdir -p ~/LLamaLauncherTui
-cd ~/LLamaLauncherTui
-```
+1. Copy the example configuration file:
+   ```bash
+   cp config.json.example config.json
+   ```
+2. Edit config.json to match your local paths (specifically BIN for the llama-server binary path and MODEL for your default GGUF model path).
 
-### 3. Run the Launcher
+### Running the Launcher
 
-Launch the interactive configuration TUI using the wrapper script:
-```bash
-./llama-server-start
-```
-Or run the Python file directly:
+Start the interface with:
+
 ```bash
 python3 llama-server-tui.py
 ```
 
----
+Alternatively, you can run the provided wrapper script:
 
-## Calibration for RTX 4090 & Qwen 3.6 MTP
+```bash
+./llama-server-start
+```
 
-To achieve maximum text generation speeds (**90+ tokens/second**), my presets are configured as follows:
+## RTX 4090 & Qwen 3.6 MTP Presets
 
-* **Flash Attention:** Set to `on` (drastically lowers VRAM footprint).
-* **KV Cache Quantization:** `CACHE_K` and `CACHE_V` set to `q8_0` (halves context RAM usage with zero quality loss).
-* **Speculative Decoding:** Enabled via `SPEC_TYPE` set to `draft-mtp` with a `draft-n-max` of `3`.
-* **DRY & XTC Samplers (Persistent Toggle):** 
-  * While DRY and XTC provide excellent writing diversity, warping logit probabilities causes speculative draft tokens to be rejected by the main model, dropping speeds from **~90 t/s down to ~65 t/s**.
-  * By default, DRY and XTC are **unchecked (disabled)** in this launcher to guarantee maximum throughput out of the box. Simply check them inside the **Advanced Samplers** collapsible if you prioritize creative output quality over raw execution speeds.
+For speculative decoding setups aiming for maximum throughput (90+ tokens/second):
+- Flash Attention: Enabled to minimize VRAM footprint.
+- KV Cache Quantization: CACHE_K and CACHE_V quantized to q8_0.
+- Speculative Decoding: Enabled with speculative type draft-mtp and draft max count of 3.
+- Samplers: Disable sampler warping options like DRY and XTC in the UI to prevent spec draft throughput drops.
 
----
+## Configuration File Structure
 
-## Configuration Structure
-
-The launcher stores configurations locally in `config.json`. A typical safe structure looks like:
+Your config.json maps parameter keys to command-line flags. Below is an example structure:
 
 ```json
 {
@@ -98,8 +86,6 @@ The launcher stores configurations locally in `config.json`. A typical safe stru
 }
 ```
 
----
-
 ## License
 
-This project is licensed under the permissive **MIT License**. See the `LICENSE` file for details.
+MIT

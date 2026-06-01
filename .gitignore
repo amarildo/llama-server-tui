@@ -15,3 +15,14 @@ __pycache__/
 # Operating system files
 .DS_Store
 Thumbs.db
+
+# Log files and developer history
+*.log
+tui_debug.log
+
+# Local environment variables and developer swaps
+.env*
+*.swp
+*.bak
+*.tmp
+
