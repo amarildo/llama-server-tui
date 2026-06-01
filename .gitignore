@@ -5,6 +5,8 @@ profiles/
 
 # Local GitHub publishing utility
 push_to_github.py
+release.sh
+
 
 # Python caching
 __pycache__/
