@@ -60,7 +60,6 @@ The launcher ships with pre-calibrated, high-performance default configurations 
 - **High-Throughput Speculative Engine (`draft-mtp`)**: Pre-configured with Multi-Token Prediction (MTP) draft max count set to `3` and min probability threshold `0.15` for extremely high inference speeds (~90-100+ tokens/second).
 - **Quantized KV Cache (`q8_0` / `q8_0`)**: Quantizes context keys and values to 8-bit to ensure optimal VRAM consumption even under large context windows.
 - **CUDA Graphs & Flash Attention**: Combines Flash Attention (`on`) with graph-safe defaults (`GGML_CUDA_DISABLE_GRAPHS=1`) to guarantee perfect driver stability under Ada Lovelace architectures when running low-bit attention caches.
-- **Optimal Memory Layouts**: Configures extremely wide batch processing sizes (`--batch-size 65536`) and micro-batching (`--ubatch-size 256`) to maximize pipeline throughput.
 - **Jinja Reasoning**: Enables Jinja prompt template parsing (`on`) and pre-configures JSON template arguments (`preserve_thinking: true`) to natively retain thinking traces for agentic/reasoning models.
 
 ## Configuration File Structure
