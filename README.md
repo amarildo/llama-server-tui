@@ -27,19 +27,9 @@ Ensure you have Python 3.8+ and Textual installed:
 pip install textual
 ```
 
-### Setup Configuration
+### Running the Launcher (Zero-Config)
 
-Before running the application, you must set up your local configuration:
-
-1. Copy the example configuration file:
-   ```bash
-   cp config.json.example config.json
-   ```
-2. Edit `config.json` to match your local paths (specifically `BIN` for your `llama-server` binary path and `MODEL` for your default GGUF model path).
-
-### Running the Launcher
-
-Start the interface with:
+You do **not** need to manually copy, create, or edit any configuration files. The application self-bootstraps completely. Simply run the launcher:
 
 ```bash
 python3 llama-server-tui.py
@@ -50,6 +40,13 @@ Alternatively, you can run the provided wrapper script:
 ```bash
 ./llama-server-start
 ```
+
+### First-Run Self-Bootstrapping
+When launched for the first time, the launcher automatically:
+1. Creates a `./profiles/` directory relative to the script's folder.
+2. Dynamically generates a generic, high-performance `default.json` preset pre-calibrated for speculative decoding.
+3. Spawns the dashboard, where you can **interactively browse and select** your local `llama-server` binary executable and GGUF model paths using the built-in keyboard-driven directory picker.
+
 
 ## Default Calibration (Qwen 3.6 27B MTP CUDA-On)
 
