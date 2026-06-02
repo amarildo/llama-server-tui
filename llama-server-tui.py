@@ -781,13 +781,13 @@ class FileBrowserModal(BaseModal[str]):
         max-width: 90;
         height: 30;
         background: #282828;
-        border: thick #6a9bcc;
+        border: thick #d97757;
         padding: 1 2;
         overflow: hidden;
     }
     #fb-title {
         text-align: center;
-        color: #6a9bcc;
+        color: #d97757;
         text-style: bold;
         background: #282828;
         width: 100%;
@@ -796,7 +796,7 @@ class FileBrowserModal(BaseModal[str]):
         overflow: hidden;
     }
     #fb-path {
-        color: #6a9bcc;
+        color: #d97757;
         background: #282828;
         width: 100%;
         height: 1;
@@ -1121,12 +1121,12 @@ class ConfirmDeleteModal(BaseModal[bool]):
         width: 50;
         height: 11;
         background: #282828;
-        border: thick #d15d5d;
+        border: thick #d97757;
         padding: 1 2;
         align: center middle;
     }
     #confirm-title {
-        color: #d15d5d;
+        color: #d97757;
         text-style: bold;
         text-align: center;
         width: 100%;
@@ -1199,12 +1199,12 @@ class LoadProfileModal(BaseModal[str]):
         max-width: 50;
         height: 19;
         background: #282828;
-        border: thick #6a9bcc;
+        border: thick #d97757;
         padding: 1 2;
         align: center middle;
     }
     #lp-title {
-        color: #6a9bcc;
+        color: #d97757;
         text-style: bold;
         text-align: center;
         width: 100%;
@@ -1297,12 +1297,12 @@ class DeleteProfileModal(BaseModal[None]):
         max-width: 50;
         height: 19;
         background: #282828;
-        border: thick #d15d5d;
+        border: thick #d97757;
         padding: 1 2;
         align: center middle;
     }
     #dp-title {
-        color: #d15d5d;
+        color: #d97757;
         text-style: bold;
         text-align: center;
         width: 100%;
@@ -1480,12 +1480,12 @@ class AlertModal(BaseModal[None]):
         width: 50;
         height: 11;
         background: #282828;
-        border: thick #788c5d;
+        border: thick #d97757;
         padding: 1 2;
         align: center middle;
     }
     #alert-title {
-        color: #788c5d;
+        color: #d97757;
         text-style: bold;
         text-align: center;
         width: 100%;
@@ -1986,12 +1986,12 @@ class LlamaConfigApp(App):
         width: 60;
         height: 8;
         background: #282828;
-        border: thick #788c5d;
+        border: thick #d97757;
         padding: 1 2;
         align: center middle;
     }
     #autodismiss-title {
-        color: #788c5d;
+        color: #d97757;
         text-style: bold;
         text-align: center;
         width: 100%;
