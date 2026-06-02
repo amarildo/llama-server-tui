@@ -1621,6 +1621,7 @@ class LlamaConfigApp(App):
         background: #1d2021;
         layout: vertical;
         align: center middle;
+        margin-bottom: 1;
     }
     #ascii-header {
         width: 100%;
@@ -1665,7 +1666,7 @@ class LlamaConfigApp(App):
         color: #d15d5d;
     }
     #main-scroll {
-        padding: 1 2 0 2;
+        padding: 0 2 0 2;
         background: #1d2021;
     }
     #dashboard-container {
