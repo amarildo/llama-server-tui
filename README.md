@@ -2,12 +2,7 @@
 
 A keyboard-driven terminal user interface (TUI) launcher for `llama-server`. It provides a clean dashboard to configure and run the server without copy-pasting long command-line arguments.
 
-```
-  ╦  ╦  ╔═╗ ╔╦╗ ╔═╗   ╦  ╔═╗ ╦ ╦ ╔╗╔ ╔═╗ ╦ ╦ ╔═╗ ╦═╗
-  ║  ║  ╠═╣ ║║║ ╠═╣   ║  ╠═╣ ║ ║ ║║║ ║   ╠═╣ ║╣  ╠╦╝
-  ╩═╝╩═╝╩ ╩ ╩ ╩ ╩ ╩   ╩═╝╩ ╩ ╚═╝ ╝╚╝ ╚═╝ ╩ ╩ ╚═╝ ╩╚═
-```
-
+![Llama Launcher TUI Screenshot](llamalauncher.png)
 ## Key Highlights
 
 - **Keyboard & Mouse Support**: Fast keyboard navigation, checkboxes, and inline directory selectors, with full mouse support for clicking, scrolling, and focus controls.
