@@ -1665,7 +1665,7 @@ class LlamaConfigApp(App):
         color: #d15d5d;
     }
     #main-scroll {
-        padding: 0 2 1 2;
+        padding: 1 2 0 2;
         background: #1d2021;
     }
     #dashboard-container {
