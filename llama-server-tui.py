@@ -1909,7 +1909,9 @@ class LlamaConfigApp(App):
         margin-bottom: 0;
     }
     Select {
-        width: 1fr;
+        width: auto;
+        min-width: 12;
+        max-width: 20;
         height: 1;
         border: none;
         background: transparent;
