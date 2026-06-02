@@ -1910,7 +1910,6 @@ class LlamaConfigApp(App):
     }
     Select {
         width: auto;
-        min-width: 12;
         max-width: 20;
         height: 1;
         border: none;
@@ -1919,6 +1918,8 @@ class LlamaConfigApp(App):
         margin: 0;
     }
     SelectCurrent {
+        width: auto;
+        min-width: 8;
         background: #3c3836;
         color: #ebdbb2;
         border: none;
