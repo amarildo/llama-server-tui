@@ -1919,18 +1919,7 @@ class LlamaConfigApp(App):
         width: 100%;
         text-align: left;
     }
-    
-    .card-infra .section-card-title { color: #d97757; }
-    .card-hardware .section-card-title { color: #d97757; }
-    .card-context .section-card-title { color: #6a9bcc; }
-    .card-http .section-card-title { color: #6a9bcc; }
-    .card-sampling .section-card-title { color: #788c5d; }
-    .card-advanced .section-card-title { color: #788c5d; }
-    .card-speculative .section-card-title { color: #788c5d; }
-    .card-reasoning .section-card-title { color: #788c5d; }
-    .card-features .section-card-title { color: #6a9bcc; }
-    .card-multimodal .section-card-title { color: #6a9bcc; }
-    .card-custom .section-card-title { color: #d97757; }
+
     .dimmed {
     }
     .info-icon {
