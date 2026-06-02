@@ -1614,14 +1614,33 @@ class LlamaConfigApp(App):
         background: rgba(0, 0, 0, 0.55);
     }
 
-    #ascii-header {
+    #header-container {
         dock: top;
         width: 100%;
         height: auto;
         background: #1d2021;
+        layout: vertical;
+        align: center middle;
+    }
+    #ascii-header {
+        width: 100%;
+        background: transparent;
         color: #d97757;
         text-align: center;
-        padding: 1 0;
+        padding: 1 0 0 0;
+    }
+    #nav-dropdown {
+        width: 45;
+        height: 1;
+        border: none;
+        margin-bottom: 1;
+    }
+    #nav-dropdown SelectCurrent {
+        background: #3c3836;
+        color: #ebdbb2;
+        border: none;
+        height: 1;
+        text-style: bold;
     }
     #notification-banner {
         dock: top;
@@ -2123,7 +2142,22 @@ class LlamaConfigApp(App):
         pass
 
     def compose(self) -> ComposeResult:
-        yield Static(ASCII_HEADER, id="ascii-header")
+        nav_options = [
+            ("Infrastructure", "card-infra"),
+            ("Hardware & Performance", "card-hardware"),
+            ("Context & Cache", "card-context"),
+            ("HTTP Server", "card-http"),
+            ("Sampling", "card-sampling"),
+            ("Advanced Samplers", "card-advanced"),
+            ("Speculative Decoding (MTP)", "card-speculative"),
+            ("Reasoning & Agentic", "card-reasoning"),
+            ("Monitoring & Logging", "card-features"),
+            ("Multimodal & Templates", "card-multimodal"),
+            ("Custom Parameters", "card-custom"),
+        ]
+        with Vertical(id="header-container"):
+            yield Static(ASCII_HEADER, id="ascii-header")
+            yield Select(nav_options, prompt="🔍 Jump to Section...", id="nav-dropdown", allow_blank=True)
         
         sections = [
             ("Infrastructure", [
@@ -2268,6 +2302,19 @@ class LlamaConfigApp(App):
                 yield Button("Refresh VRAM", id="btn-refresh-vram", variant="warning", classes="profile-btn")
             with Horizontal(id="start-button-container"):
                 yield Button("Start Server", id="btn-start", variant="success")
+
+    @on(Select.Changed)
+    def on_select_changed(self, event: Select.Changed) -> None:
+        if event.select.id == "nav-dropdown" and event.value != Select.BLANK:
+            target_class = event.value
+            try:
+                scroll_container = self.query_one("#main-scroll", VerticalScroll)
+                target_card = scroll_container.query_one(f".{target_class}")
+                scroll_container.scroll_to_widget(target_card)
+                # Reset dropdown to blank so it shows the prompt and can be reused
+                event.select.value = Select.BLANK
+            except Exception:
+                pass
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "btn-load-profile":

@@ -123,6 +123,24 @@
             padding-left: 15px;
         }
 
+        .header-nav select {
+            background-color: var(--bg-well);
+            color: var(--fg-cream);
+            border: 1px solid var(--bg-select);
+            border-radius: 4px;
+            padding: 4px 10px;
+            font-family: var(--font-sans);
+            font-size: 13px;
+            font-weight: bold;
+            outline: none;
+            cursor: pointer;
+            transition: border-color 0.15s, color 0.15s;
+        }
+        .header-nav select:hover {
+            border-color: var(--gold);
+            color: var(--fg-bright);
+        }
+
         .header-stats {
             display: flex;
             align-items: center;
@@ -1124,6 +1142,22 @@
         <div class="header-brand">
             <div class="header-logo">⭐ LLAMA-SERVER<span>.TUI</span></div>
             <div class="header-tagline">Advanced Retro Configuration Engine v2.4</div>
+        </div>
+        <div class="header-nav">
+            <select id="header-nav-select" onchange="jumpToSection(this.value)">
+                <option value="" disabled selected>🔍 Jump to Section...</option>
+                <option value="section-card-0">Infrastructure</option>
+                <option value="section-card-1">Hardware & Performance</option>
+                <option value="section-card-2">Context & Cache</option>
+                <option value="section-card-3">HTTP Server</option>
+                <option value="section-card-4">Sampling</option>
+                <option value="section-card-5">Advanced Samplers</option>
+                <option value="section-card-6">Speculative Decoding (MTP)</option>
+                <option value="section-card-7">Reasoning & Agentic</option>
+                <option value="section-card-8">Features & Monitoring</option>
+                <option value="section-card-9">Multimodal & Templates</option>
+                <option value="section-card-10">Custom Parameters</option>
+            </select>
         </div>
         <div class="header-stats">
             <div class="stat-item">
@@ -2488,6 +2522,31 @@
         function stopSimulatedServer() {
             document.getElementById("terminal-screen").classList.remove("active");
             triggerToastNotification("Llama Server daemon terminated cleanly.", "error");
+        }
+
+        function jumpToSection(cardId) {
+            const element = document.getElementById(cardId);
+            if (element) {
+                // Expand if collapsed
+                if (!element.classList.contains("expanded")) {
+                    element.classList.add("expanded");
+                }
+                // Scroll smoothly
+                element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                // Flash the header background briefly to attract focus
+                const header = element.querySelector(".card-header");
+                if (header) {
+                    const originalBg = header.style.backgroundColor;
+                    header.style.backgroundColor = "var(--bg-select)";
+                    header.style.color = "var(--fg-bright)";
+                    setTimeout(() => {
+                        header.style.backgroundColor = originalBg;
+                        header.style.color = "";
+                    }, 800);
+                }
+                // Reset select value so it can be re-selected
+                document.getElementById("header-nav-select").value = "";
+            }
         }
     </script>
 </body>
