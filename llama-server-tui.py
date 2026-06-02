@@ -1621,6 +1621,7 @@ class LlamaConfigApp(App):
         background: #1d2021;
         layout: vertical;
         align: center middle;
+        padding-top: 1;
         margin-bottom: 1;
     }
     #ascii-header {
