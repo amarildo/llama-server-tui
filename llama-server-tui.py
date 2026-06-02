@@ -1629,11 +1629,17 @@ class LlamaConfigApp(App):
         text-align: center;
         padding: 1 0 0 0;
     }
+    #nav-dropdown-wrapper {
+        width: 100%;
+        height: 1;
+        align: center middle;
+        background: transparent;
+        margin-bottom: 1;
+    }
     #nav-dropdown {
         width: 45;
         height: 1;
         border: none;
-        margin-bottom: 1;
     }
     #nav-dropdown SelectCurrent {
         background: #3c3836;
@@ -2157,7 +2163,8 @@ class LlamaConfigApp(App):
         ]
         with Vertical(id="header-container"):
             yield Static(ASCII_HEADER, id="ascii-header")
-            yield Select(nav_options, prompt="🔍 Jump to Section...", id="nav-dropdown", allow_blank=True)
+            with Horizontal(id="nav-dropdown-wrapper"):
+                yield Select(nav_options, prompt="🔍 Jump to Section...", id="nav-dropdown", allow_blank=True)
         
         sections = [
             ("Infrastructure", [
