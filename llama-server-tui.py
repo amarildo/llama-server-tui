@@ -1665,7 +1665,7 @@ class LlamaConfigApp(App):
         color: #d15d5d;
     }
     #main-scroll {
-        padding: 1 2;
+        padding: 0 2 1 2;
         background: #1d2021;
     }
     #dashboard-container {
@@ -1797,11 +1797,11 @@ class LlamaConfigApp(App):
     #buttons {
         dock: bottom;
         layout: vertical;
-        height: 10;
+        height: 9;
         background: #1d2021;
         border-top: solid #3c3836;
         align: center middle;
-        padding-top: 1;
+        padding-top: 0;
     }
     #profile-loaded-label {
         color: #a89984;
