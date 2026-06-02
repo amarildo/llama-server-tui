@@ -1906,7 +1906,7 @@ class LlamaConfigApp(App):
         margin-right: 2;
         margin-bottom: 2;
         background: #282828;
-        border: solid #ebdbb2; /* fallback */
+        border: none;
         padding: 1 2;
         height: auto;
         layout: vertical;
@@ -1920,37 +1920,16 @@ class LlamaConfigApp(App):
         text-align: left;
     }
     
-    .card-infra { border: solid #d97757; }
     .card-infra .section-card-title { color: #d97757; }
-    
-    .card-hardware { border: solid #d97757; }
     .card-hardware .section-card-title { color: #d97757; }
-    
-    .card-context { border: solid #6a9bcc; }
     .card-context .section-card-title { color: #6a9bcc; }
-    
-    .card-http { border: solid #6a9bcc; }
     .card-http .section-card-title { color: #6a9bcc; }
-    
-    .card-sampling { border: solid #788c5d; }
     .card-sampling .section-card-title { color: #788c5d; }
-    
-    .card-advanced { border: solid #788c5d; }
     .card-advanced .section-card-title { color: #788c5d; }
-    
-    .card-speculative { border: solid #788c5d; }
     .card-speculative .section-card-title { color: #788c5d; }
-    
-    .card-reasoning { border: solid #788c5d; }
     .card-reasoning .section-card-title { color: #788c5d; }
-    
-    .card-features { border: solid #6a9bcc; }
     .card-features .section-card-title { color: #6a9bcc; }
-    
-    .card-multimodal { border: solid #6a9bcc; }
     .card-multimodal .section-card-title { color: #6a9bcc; }
-    
-    .card-custom { border: solid #d97757; }
     .card-custom .section-card-title { color: #d97757; }
     .dimmed {
     }
@@ -2225,7 +2204,7 @@ class LlamaConfigApp(App):
                 ("DRAFT_MAX", "Draft Max Steps:"),
                 ("DRAFT_P_MIN", "Draft Min Prob:"),
             ]),
-            ("Reasoning & Agentic (Qwen3.6)", [
+            ("Reasoning & Agentic", [
                 ("REASONING", "Thinking Mode:"),
                 ("REASONING_FORMAT", "Thinking Format:"),
                 ("REASONING_BUDGET", "Thinking Budget:"),
@@ -2260,7 +2239,7 @@ class LlamaConfigApp(App):
                     "Sampling": "card-sampling",
                     "Advanced Samplers": "card-advanced",
                     "Speculative Decoding (MTP)": "card-speculative",
-                    "Reasoning & Agentic (Qwen3.6)": "card-reasoning",
+                    "Reasoning & Agentic": "card-reasoning",
                     "Monitoring & Logging": "card-features",
                     "Multimodal & Templates": "card-multimodal",
                     "Custom Parameters": "card-custom"
