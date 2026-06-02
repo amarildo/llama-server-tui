@@ -1627,14 +1627,14 @@ class LlamaConfigApp(App):
         background: transparent;
         color: #d97757;
         text-align: center;
-        padding: 1 0 0 0;
+        padding: 0;
     }
     #nav-dropdown-wrapper {
         width: 100%;
         height: 1;
         align: center middle;
         background: transparent;
-        margin-bottom: 1;
+        margin-bottom: 0;
     }
     #nav-dropdown {
         width: 45;
