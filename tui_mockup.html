@@ -1900,10 +1900,24 @@
             calculateVRAMEstimate();
         }
 
+        // Helper to dynamically adjust select width based on option content length
+        function adjustSelectWidth(selectElement) {
+            if (!selectElement) return;
+            const text = selectElement.options[selectElement.selectedIndex] ? selectElement.options[selectElement.selectedIndex].text : "";
+            const charWidth = 8;
+            const padding = 36; // 12px left padding + 24px right padding (arrow)
+            selectElement.style.width = (text.length * charWidth + padding) + "px";
+        }
+
         // Catches user typing and updates active cache
         function onFieldInputChanged(key) {
-            const inputVal = document.getElementById(`field-input-${key}`).value;
+            const inputEl = document.getElementById(`field-input-${key}`);
+            const inputVal = inputEl.value;
             activeConfig[key] = inputVal;
+            
+            if (inputEl.tagName === "SELECT") {
+                adjustSelectWidth(inputEl);
+            }
             
             setDirtyStatus(true);
             updateCommandLinePreview();
@@ -1942,6 +1956,9 @@
                     
                     if (inputEl) {
                         inputEl.value = val;
+                        if (inputEl.tagName === "SELECT") {
+                            adjustSelectWidth(inputEl);
+                        }
                     }
 
                     // Handle enabled/disabled row properties

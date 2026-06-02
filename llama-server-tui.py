@@ -1010,11 +1010,18 @@ class SaveProfileModal(BaseModal[str]):
         margin-bottom: 1;
     }
     #sp-select SelectCurrent {
+        width: 100%;
         background: #3c3836;
         color: #ebdbb2;
         border: none;
         height: 1;
         padding: 0 1;
+    }
+    #sp-select SelectCurrent Static#label {
+        width: 1fr;
+    }
+    #sp-select > SelectOverlay {
+        width: 1fr;
     }
     #sp-input {
         width: 100%;
@@ -1643,11 +1650,18 @@ class LlamaConfigApp(App):
         border: none;
     }
     #nav-dropdown SelectCurrent {
+        width: 100%;
         background: #3c3836;
         color: #ebdbb2;
         border: none;
         height: 1;
         text-style: bold;
+    }
+    #nav-dropdown SelectCurrent Static#label {
+        width: 1fr;
+    }
+    #nav-dropdown > SelectOverlay {
+        width: 1fr;
     }
     #notification-banner {
         dock: top;
@@ -1766,7 +1780,7 @@ class LlamaConfigApp(App):
         color: #7c6f64;
         border: none;
     }
-    SelectCurrent.dimmed {
+    Select.dimmed SelectCurrent {
         background: #1d2021;
         color: #7c6f64;
         border: none;
@@ -1910,7 +1924,6 @@ class LlamaConfigApp(App):
     }
     Select {
         width: auto;
-        max-width: 20;
         height: 1;
         border: none;
         background: transparent;
@@ -1925,6 +1938,16 @@ class LlamaConfigApp(App):
         border: none;
         height: 1;
         padding: 0 1;
+    }
+    SelectCurrent .arrow {
+        padding: 0 0 0 1;
+    }
+    SelectCurrent Static#label {
+        width: auto;
+    }
+    SelectOverlay {
+        width: auto;
+        padding: 0;
     }
     .spacer-checkbox {
         width: 3;
