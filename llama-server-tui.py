@@ -1800,12 +1800,12 @@ class LlamaConfigApp(App):
         height: 4;
     }
     #btn-load-profile {
-        background: #6a9bcc;
+        background: #d97757;
         color: #1d2021;
         text-style: bold;
     }
     #btn-load-profile:hover {
-        background: #4a7bab;
+        background: #b85b3b;
         color: #fbf1c7;
     }
     #btn-save-profile {
@@ -1818,25 +1818,25 @@ class LlamaConfigApp(App):
         color: #fbf1c7;
     }
     #btn-delete-profile {
-        background: #d15d5d;
+        background: #d97757;
         color: #1d2021;
         text-style: bold;
     }
     #btn-delete-profile:hover {
-        background: #ad3e3e;
-        color: #ebdbb2;
+        background: #b85b3b;
+        color: #fbf1c7;
     }
     #btn-refresh-vram {
-        background: #788c5d;
+        background: #d97757;
         color: #1d2021;
         text-style: bold;
     }
     #btn-refresh-vram:hover {
-        background: #586b3e;
+        background: #b85b3b;
         color: #fbf1c7;
     }
     #btn-start {
-        background: #788c5d;
+        background: #6a9bcc;
         color: #1d2021;
         text-style: bold;
         height: 3;
@@ -1848,7 +1848,7 @@ class LlamaConfigApp(App):
         margin: 0 0 1 0;
     }
     #btn-start:hover {
-        background: #586b3e;
+        background: #4a7bab;
         color: #fbf1c7;
     }
     .grid-container {
