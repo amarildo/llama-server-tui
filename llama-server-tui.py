@@ -781,13 +781,13 @@ class FileBrowserModal(BaseModal[str]):
         max-width: 90;
         height: 30;
         background: #282828;
-        border: thick #fabd2f;
+        border: thick #6a9bcc;
         padding: 1 2;
         overflow: hidden;
     }
     #fb-title {
         text-align: center;
-        color: #fabd2f;
+        color: #6a9bcc;
         text-style: bold;
         background: #282828;
         width: 100%;
@@ -796,7 +796,7 @@ class FileBrowserModal(BaseModal[str]):
         overflow: hidden;
     }
     #fb-path {
-        color: #4fa6ed;
+        color: #6a9bcc;
         background: #282828;
         width: 100%;
         height: 1;
@@ -822,13 +822,13 @@ class FileBrowserModal(BaseModal[str]):
         background: #3c3836;
     }
     .fb-entry-dir {
-        color: #fabd2f;
+        color: #6a9bcc;
     }
     .fb-entry-file {
-        color: #b8bb26;
+        color: #788c5d;
     }
     .fb-entry-parent {
-        color: #fe8019;
+        color: #d97757;
         text-style: bold;
     }
     #fb-buttons {
@@ -977,12 +977,12 @@ class SaveProfileModal(BaseModal[str]):
         max-width: 55;
         height: 19;
         background: #282828;
-        border: thick #fabd2f;
+        border: thick #d97757;
         padding: 1 2;
         align: center middle;
     }
     #sp-title {
-        color: #fabd2f;
+        color: #d97757;
         text-style: bold;
         text-align: center;
         width: 100%;
@@ -1026,7 +1026,7 @@ class SaveProfileModal(BaseModal[str]):
         margin-bottom: 1;
     }
     #sp-input:focus {
-        background: #fabd2f;
+        background: #d97757;
         color: #282828;
     }
     #sp-buttons {
@@ -1047,7 +1047,7 @@ class SaveProfileModal(BaseModal[str]):
         color: #ebdbb2;
     }
     #btn-sp-save {
-        background: #fabd2f;
+        background: #d97757;
         color: #282828;
         text-style: bold;
     }
@@ -1121,12 +1121,12 @@ class ConfirmDeleteModal(BaseModal[bool]):
         width: 50;
         height: 11;
         background: #282828;
-        border: thick #fb4934;
+        border: thick #d15d5d;
         padding: 1 2;
         align: center middle;
     }
     #confirm-title {
-        color: #fb4934;
+        color: #d15d5d;
         text-style: bold;
         text-align: center;
         width: 100%;
@@ -1153,7 +1153,7 @@ class ConfirmDeleteModal(BaseModal[bool]):
         border: none;
     }
     #btn-confirm-yes {
-        background: #fb4934;
+        background: #d15d5d;
         color: #282828;
         text-style: bold;
     }
@@ -1199,12 +1199,12 @@ class LoadProfileModal(BaseModal[str]):
         max-width: 50;
         height: 19;
         background: #282828;
-        border: thick #fabd2f;
+        border: thick #6a9bcc;
         padding: 1 2;
         align: center middle;
     }
     #lp-title {
-        color: #fabd2f;
+        color: #6a9bcc;
         text-style: bold;
         text-align: center;
         width: 100%;
@@ -1226,7 +1226,7 @@ class LoadProfileModal(BaseModal[str]):
         padding: 0 1;
     }
     .lp-entry:hover {
-        color: #fabd2f;
+        color: #6a9bcc;
         text-style: bold;
     }
     #lp-buttons {
@@ -1297,12 +1297,12 @@ class DeleteProfileModal(BaseModal[None]):
         max-width: 50;
         height: 19;
         background: #282828;
-        border: thick #fb4934;
+        border: thick #d15d5d;
         padding: 1 2;
         align: center middle;
     }
     #dp-title {
-        color: #fb4934;
+        color: #d15d5d;
         text-style: bold;
         text-align: center;
         width: 100%;
@@ -1324,11 +1324,11 @@ class DeleteProfileModal(BaseModal[None]):
         padding: 0 1;
     }
     .dp-entry:hover {
-        color: #fabd2f;
+        color: #d15d5d;
         text-style: bold;
     }
     .dp-entry.selected {
-        background: #fabd2f;
+        background: #d15d5d;
         color: #1d2021;
         text-style: bold;
     }
@@ -1349,12 +1349,12 @@ class DeleteProfileModal(BaseModal[None]):
         color: #ebdbb2;
     }
     #btn-dp-delete {
-        background: #fb4934;
+        background: #d15d5d;
         color: #1d2021;
         text-style: bold;
     }
     #btn-dp-delete:hover {
-        background: #cc241d;
+        background: #ad3e3e;
         color: #ebdbb2;
     }
     #btn-dp-delete:disabled {
@@ -1480,12 +1480,12 @@ class AlertModal(BaseModal[None]):
         width: 50;
         height: 11;
         background: #282828;
-        border: thick #fabd2f;
+        border: thick #788c5d;
         padding: 1 2;
         align: center middle;
     }
     #alert-title {
-        color: #fabd2f;
+        color: #788c5d;
         text-style: bold;
         text-align: center;
         width: 100%;
@@ -1505,7 +1505,7 @@ class AlertModal(BaseModal[None]):
         background: #282828;
     }
     #btn-alert-ok {
-        background: #fabd2f;
+        background: #788c5d;
         color: #282828;
         text-style: bold;
         min-width: 12;
@@ -1516,7 +1516,7 @@ class AlertModal(BaseModal[None]):
         margin: 0;
     }
     #btn-alert-ok:hover {
-        background: #fe8019;
+        background: #586b3e;
         color: #282828;
     }
     """
@@ -1619,7 +1619,7 @@ class LlamaConfigApp(App):
         width: 100%;
         height: auto;
         background: #1d2021;
-        color: #fabd2f;
+        color: #d97757;
         text-align: center;
         padding: 1 0;
     }
@@ -1628,16 +1628,16 @@ class LlamaConfigApp(App):
         width: 100%;
         height: 1;
         background: #282828;
-        color: #fabd2f;
+        color: #6a9bcc;
         text-align: center;
         text-style: bold;
         display: none;
     }
     #notification-banner.success {
-        color: #b8bb26;
+        color: #788c5d;
     }
     #notification-banner.error {
-        color: #fb4934;
+        color: #d15d5d;
     }
     #main-scroll {
         padding: 1 2;
@@ -1652,7 +1652,7 @@ class LlamaConfigApp(App):
         layout: vertical;
     }
     #dashboard-title-label {
-        color: #fabd2f;
+        color: #d97757;
         text-style: bold;
         margin-bottom: 1;
     }
@@ -1671,7 +1671,7 @@ class LlamaConfigApp(App):
     }
     #vram-bar {
         background: transparent;
-        color: #b8bb26;
+        color: #788c5d;
         text-style: bold;
         margin-bottom: 1;
         width: 100%;
@@ -1683,7 +1683,7 @@ class LlamaConfigApp(App):
         margin-bottom: 0;
     }
     #preview-title {
-        color: #fabd2f;
+        color: #d97757;
         text-style: bold;
         width: 1fr;
     }
@@ -1707,11 +1707,11 @@ class LlamaConfigApp(App):
         overflow-y: hidden;
     }
     Input:focus {
-        background: #fabd2f;
+        background: #6a9bcc;
         color: #1d2021;
     }
     Select:focus SelectCurrent, SelectCurrent:focus {
-        background: #fabd2f;
+        background: #6a9bcc;
         color: #1d2021;
     }
     Label {
@@ -1720,7 +1720,7 @@ class LlamaConfigApp(App):
     }
     .custom-checkbox {
         background: #282828;
-        color: #b8bb26;
+        color: #788c5d;
         text-style: bold;
         width: 3;
         margin-right: 1;
@@ -1800,43 +1800,43 @@ class LlamaConfigApp(App):
         height: 4;
     }
     #btn-load-profile {
-        background: #2b77c3;
-        color: #fbf1c7;
+        background: #6a9bcc;
+        color: #1d2021;
         text-style: bold;
     }
     #btn-load-profile:hover {
-        background: #4fa6ed;
-        color: #1d2021;
+        background: #4a7bab;
+        color: #fbf1c7;
     }
     #btn-save-profile {
-        background: #d65d0e;
-        color: #fbf1c7;
+        background: #d97757;
+        color: #1d2021;
         text-style: bold;
     }
     #btn-save-profile:hover {
-        background: #fe8019;
-        color: #1d2021;
+        background: #b85b3b;
+        color: #fbf1c7;
     }
     #btn-delete-profile {
-        background: #fb4934;
+        background: #d15d5d;
         color: #1d2021;
         text-style: bold;
     }
     #btn-delete-profile:hover {
-        background: #cc241d;
+        background: #ad3e3e;
         color: #ebdbb2;
     }
     #btn-refresh-vram {
-        background: #d79921;
+        background: #788c5d;
         color: #1d2021;
         text-style: bold;
     }
     #btn-refresh-vram:hover {
-        background: #fabd2f;
-        color: #1d2021;
+        background: #586b3e;
+        color: #fbf1c7;
     }
     #btn-start {
-        background: #b8bb26;
+        background: #788c5d;
         color: #1d2021;
         text-style: bold;
         height: 3;
@@ -1848,8 +1848,8 @@ class LlamaConfigApp(App):
         margin: 0 0 1 0;
     }
     #btn-start:hover {
-        background: #8ec07c;
-        color: #1d2021;
+        background: #586b3e;
+        color: #fbf1c7;
     }
     .grid-container {
         layout: horizontal;
@@ -1912,7 +1912,7 @@ class LlamaConfigApp(App):
         layout: vertical;
     }
     .section-card-title {
-        color: #fabd2f;
+        color: #d97757;
         text-style: bold;
         background: transparent;
         margin-bottom: 1;
@@ -1920,38 +1920,38 @@ class LlamaConfigApp(App):
         text-align: left;
     }
     
-    .card-infra { border: solid #4fa6ed; }
-    .card-infra .section-card-title { color: #4fa6ed; }
+    .card-infra { border: solid #d97757; }
+    .card-infra .section-card-title { color: #d97757; }
     
-    .card-hardware { border: solid #fe8019; }
-    .card-hardware .section-card-title { color: #fe8019; }
+    .card-hardware { border: solid #d97757; }
+    .card-hardware .section-card-title { color: #d97757; }
     
-    .card-context { border: solid #8ec07c; }
-    .card-context .section-card-title { color: #8ec07c; }
+    .card-context { border: solid #6a9bcc; }
+    .card-context .section-card-title { color: #6a9bcc; }
     
-    .card-http { border: solid #d3869b; }
-    .card-http .section-card-title { color: #d3869b; }
+    .card-http { border: solid #6a9bcc; }
+    .card-http .section-card-title { color: #6a9bcc; }
     
-    .card-sampling { border: solid #fabd2f; }
-    .card-sampling .section-card-title { color: #fabd2f; }
+    .card-sampling { border: solid #788c5d; }
+    .card-sampling .section-card-title { color: #788c5d; }
     
-    .card-advanced { border: solid #fb4934; }
-    .card-advanced .section-card-title { color: #fb4934; }
+    .card-advanced { border: solid #788c5d; }
+    .card-advanced .section-card-title { color: #788c5d; }
     
-    .card-speculative { border: solid #b8bb26; }
-    .card-speculative .section-card-title { color: #b8bb26; }
+    .card-speculative { border: solid #788c5d; }
+    .card-speculative .section-card-title { color: #788c5d; }
     
-    .card-reasoning { border: solid #8ec07c; }
-    .card-reasoning .section-card-title { color: #8ec07c; }
+    .card-reasoning { border: solid #788c5d; }
+    .card-reasoning .section-card-title { color: #788c5d; }
     
-    .card-features { border: solid #4fa6ed; }
-    .card-features .section-card-title { color: #4fa6ed; }
+    .card-features { border: solid #6a9bcc; }
+    .card-features .section-card-title { color: #6a9bcc; }
     
-    .card-multimodal { border: solid #fe8019; }
-    .card-multimodal .section-card-title { color: #fe8019; }
+    .card-multimodal { border: solid #6a9bcc; }
+    .card-multimodal .section-card-title { color: #6a9bcc; }
     
-    .card-custom { border: solid #a89984; }
-    .card-custom .section-card-title { color: #a89984; }
+    .card-custom { border: solid #d97757; }
+    .card-custom .section-card-title { color: #d97757; }
     .dimmed {
     }
     .info-icon {
@@ -1962,7 +1962,7 @@ class LlamaConfigApp(App):
         content-align: center middle;
     }
     .info-icon:hover {
-        color: #4fa6ed;
+        color: #6a9bcc;
     }
     .browse-btn {
         min-width: 4;
@@ -1971,25 +1971,25 @@ class LlamaConfigApp(App):
         margin: 0 0 0 1;
         padding: 0;
         background: #3c3836;
-        color: #8ec07c;
+        color: #6a9bcc;
         border: none;
         text-style: bold;
     }
     .browse-btn:hover {
-        background: #8ec07c;
+        background: #6a9bcc;
         color: #1d2021;
     }
     Tooltip {
         background: #3c3836;
         color: #ebdbb2;
-        border: solid #fabd2f;
+        border: solid #6a9bcc;
         padding: 1 2;
         max-width: 50;
     }
     Toast {
         background: #282828;
         color: #fbf1c7;
-        border: solid #fabd2f;
+        border: solid #6a9bcc;
         padding: 1 2;
         height: auto;
         min-height: 3;
@@ -1998,7 +1998,7 @@ class LlamaConfigApp(App):
         background: #3c3836;
     }
     Toast .toast--title {
-        color: #fabd2f;
+        color: #6a9bcc;
         text-style: bold;
     }
     ToastRack {
@@ -2018,12 +2018,12 @@ class LlamaConfigApp(App):
         width: 60;
         height: 8;
         background: #282828;
-        border: thick #fabd2f;
+        border: thick #788c5d;
         padding: 1 2;
         align: center middle;
     }
     #autodismiss-title {
-        color: #fabd2f;
+        color: #788c5d;
         text-style: bold;
         text-align: center;
         width: 100%;
@@ -2427,7 +2427,7 @@ class LlamaConfigApp(App):
     def update_profile_loaded_label(self) -> None:
         try:
             lbl = self.query_one("#profile-loaded-label", Label)
-            lbl.update(f"Profile Loaded: [bold #fabd2f]{self.active_profile}[/]")
+            lbl.update(f"Profile Loaded: [bold #d97757]{self.active_profile}[/]")
         except Exception:
             pass
 
@@ -2738,20 +2738,21 @@ class LlamaConfigApp(App):
             # Color coding threshold based on saturation
             if percentage > 100:
                 if vram_text is not None:
-                    vram_text.styles.color = "#fb4934" # Red
-                bar_color = "#fb4934"
+                    vram_text.styles.color = "#d15d5d" # Red
+                bar_color = "#d15d5d"
             elif percentage > 90:
                 if vram_text is not None:
-                    vram_text.styles.color = "#fe8019" # Orange
-                bar_color = "#fe8019"
+                    vram_text.styles.color = "#d97757" # Orange
+                bar_color = "#d97757"
             elif percentage > 75:
                 if vram_text is not None:
-                    vram_text.styles.color = "#fabd2f" # Gold
-                bar_color = "#fabd2f"
+                    vram_text.styles.color = "#6a9bcc" # Blue
+                bar_color = "#6a9bcc"
             else:
                 if vram_text is not None:
                     vram_text.styles.color = "#ebdbb2" # Cream
-                bar_color = "#b8bb26" # Green
+                bar_color = "#788c5d" # Green
+
                 
             # Build Unicode block meter progress bar (40 character width)
             # █ (solid block) and ░ (light shade block)
