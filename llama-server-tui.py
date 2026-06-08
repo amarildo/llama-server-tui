@@ -33,14 +33,17 @@ def pre_parse_gguf_params(metadata: dict, model_path: str) -> dict:
 
     for k, v in metadata.items():
         kl = k.lower()
-        if kl.endswith(".block_count"):
-            block_count = int(v)
-        elif kl.endswith(".attention.head_count_kv"):
-            head_count_kv = int(v)
-        elif kl.endswith(".embedding_length"):
-            embedding_length = int(v)
-        elif kl.endswith(".attention.head_count"):
-            head_count = int(v)
+        try:
+            if kl.endswith(".block_count"):
+                block_count = int(v)
+            elif kl.endswith(".attention.head_count_kv"):
+                head_count_kv = int(v)
+            elif kl.endswith(".embedding_length"):
+                embedding_length = int(v)
+            elif kl.endswith(".attention.head_count"):
+                head_count = int(v)
+        except (ValueError, TypeError):
+            pass
 
     # Head dimension determination
     head_dim = 128
@@ -185,6 +188,7 @@ ASCII_HEADER = """  ╦  ╦  ╔═╗ ╔╦╗ ╔═╗   ╦  ╔═╗ ╦
 DEFAULT_CONFIG = {
     "BIN": os.path.expanduser("~/llama.cpp/build/bin/llama-server"),
     "MODEL": os.path.expanduser("~/models/Qwen3.6-27B-UD-Q4_K_XL.gguf"),
+    "MODEL_DRAFT": "",
     "HOST": "127.0.0.1",
     "PORT": "8080",
     "API_KEY": "",
@@ -253,6 +257,7 @@ DEFAULT_CONFIG = {
     "EXTRA_FLAGS": "",
     "DISABLED_FIELDS": [
         "API_KEY",
+        "MODEL_DRAFT",
         "THREADS",
         "THREADS_BATCH",
         "BATCH_SIZE",
@@ -341,6 +346,7 @@ PARAM_HELP = {
     "DRY_PENALTY_LAST_N": "[Flag: --dry-penalty-last-n] | [Default: -1] | Limit DRY search window to the last N tokens. Set to -1 to scan the entire context.",
     "XTC_PROBABILITY": "[Flag: --xtc-probability] | [Default: 0.5] | XTC sampler probability. Balances logical flow and vocabulary diversity (e.g., 0.5).",
     "XTC_THRESHOLD": "[Flag: --xtc-threshold] | [Default: 0.1] | XTC sampler minimum probability threshold. Excludes predictable choices below threshold.",
+    "MODEL_DRAFT": "[Flag: -md / --model-draft] | [Default: None] | Path to the speculative decoding draft model (GGUF file). Used to accelerate generation via speculative draft-model decoding.",
     "SPEC_TYPE": "[Flag: --spec-type] | [Default: draft-mtp] | Speculative decoding method. Use 'draft-mtp' for Qwen3.6-MTP native multi-token prediction.",
     "SPEC_MAX": "[Flag: --spec-draft-n-max] | [Default: 3] | Maximum draft tokens to speculate per step. 2 to 3 is optimal for Qwen3.6-MTP models.",
     "SPEC_MIN": "[Flag: --spec-draft-p-min] | [Default: 0.05] | Minimum acceptance probability for draft tokens. Lower values speculate more aggressively.",
@@ -411,6 +417,7 @@ def normalize_select_value(key: str, value: str) -> str:
 
 FLAG_MAPPING = {
     "MODEL": "-m",
+    "MODEL_DRAFT": "-md",
     "HOST": "--host",
     "PORT": "--port",
     "NGL": "-ngl",
@@ -546,7 +553,7 @@ class ParameterField(Horizontal):
             self.true_value = normalize_select_value(self.key, value)
 
         self.initial_value = self.true_value
-        if self.key in ("MODEL", "BIN", "MMPROJ", "CHAT_TEMPLATE_FILE"):
+        if self.key in ("MODEL", "BIN", "MMPROJ", "CHAT_TEMPLATE_FILE", "MODEL_DRAFT"):
             self.initial_value = truncate_path(self.true_value)
         self.is_mandatory = is_mandatory
         self._initial_enabled = is_enabled
@@ -564,9 +571,9 @@ class ParameterField(Horizontal):
         if inp is not None:
             if not isinstance(inp, Select):
                 val_str = inp.value
-                if not (self.key in ("MODEL", "BIN", "MMPROJ", "CHAT_TEMPLATE_FILE") and val_str.startswith(".../")):
+                if not (self.key in ("MODEL", "BIN", "MMPROJ", "CHAT_TEMPLATE_FILE", "MODEL_DRAFT") and val_str.startswith(".../")):
                     self.true_value = val_str
-            if self.key in ("MODEL", "BIN", "MMPROJ", "CHAT_TEMPLATE_FILE"):
+            if self.key in ("MODEL", "BIN", "MMPROJ", "CHAT_TEMPLATE_FILE", "MODEL_DRAFT"):
                 inp.value = truncate_path(self.true_value)
 
     def get_input_widget(self):
@@ -637,7 +644,7 @@ class ParameterField(Horizontal):
             if inp.has_focus:
                 inp.value = val
             else:
-                if self.key in ("MODEL", "BIN", "MMPROJ", "CHAT_TEMPLATE_FILE"):
+                if self.key in ("MODEL", "BIN", "MMPROJ", "CHAT_TEMPLATE_FILE", "MODEL_DRAFT"):
                     inp.value = truncate_path(val)
                 else:
                     inp.value = val
@@ -668,6 +675,8 @@ class ParameterField(Horizontal):
             yield Button("📂", id="btn-browse-mmproj", classes="browse-btn")
         elif self.key == "CHAT_TEMPLATE_FILE":
             yield Button("📂", id="btn-browse-template", classes="browse-btn")
+        elif self.key == "MODEL_DRAFT":
+            yield Button("📂", id="btn-browse-model-draft", classes="browse-btn")
 
     def watch_enabled(self, enabled: bool) -> None:
         self.update_visuals()
@@ -749,7 +758,7 @@ class ParameterField(Horizontal):
     @on(Input.Changed)
     def on_input_changed(self, event: Input.Changed) -> None:
         val_str = str(event.value)
-        if self.key in ("MODEL", "BIN", "MMPROJ", "CHAT_TEMPLATE_FILE") and val_str.startswith(".../"):
+        if self.key in ("MODEL", "BIN", "MMPROJ", "CHAT_TEMPLATE_FILE", "MODEL_DRAFT") and val_str.startswith(".../"):
             return  # Ignore visual path mask truncation updates to preserve the full absolute path
         self.true_value = val_str
         logging.debug(f"[ParameterField input_changed] key={self.key}, val={event.value}")
@@ -886,14 +895,26 @@ class FileBrowserModal(BaseModal[str]):
         usable_w = max(40, int(term_width * 0.8) - 10)
 
         # Parent dir entry
-        lbl = Label("📁 ..", classes="fb-entry fb-entry-parent")
-        lbl.fb_path = str(self.current_dir.parent)
-        lbl.fb_type = "parent"
-        yield lbl
         try:
-            for item in sorted(self.current_dir.iterdir(), key=lambda x: (not x.is_dir(), x.name.lower())):
-                if item.name.startswith("."):
-                    continue
+            if self.current_dir != self.current_dir.parent:
+                lbl = Label("📁 ..", classes="fb-entry fb-entry-parent")
+                lbl.fb_path = str(self.current_dir.parent)
+                lbl.fb_type = "parent"
+                yield lbl
+        except Exception:
+            pass
+
+        try:
+            items = sorted(self.current_dir.iterdir(), key=lambda x: (not x.is_dir(), x.name.lower()))
+        except PermissionError:
+            yield Label("⚠ Permission denied", classes="fb-entry")
+            return
+        except Exception as e:
+            yield Label(f"⚠ Error: {e}", classes="fb-entry")
+            return
+
+        for item in items:
+            try:
                 if item.is_dir():
                     dirname = item.name
                     max_dir_len = usable_w - 4
@@ -909,8 +930,12 @@ class FileBrowserModal(BaseModal[str]):
                 elif item.is_file():
                     if self.file_extensions is not None and item.suffix.lower() not in self.file_extensions:
                         continue
-                    size_mb = item.stat().st_size / (1024 * 1024)
-                    size_str = f"{size_mb:.0f}MB" if size_mb < 1024 else f"{size_mb/1024:.1f}GB"
+                    
+                    try:
+                        size_mb = item.stat().st_size / (1024 * 1024)
+                        size_str = f"{size_mb:.0f}MB" if size_mb < 1024 else f"{size_mb/1024:.1f}GB"
+                    except Exception:
+                        size_str = "? MB"
                     
                     filename = item.name
                     max_file_len = usable_w - len(size_str) - 8
@@ -931,8 +956,9 @@ class FileBrowserModal(BaseModal[str]):
                     lbl.fb_path = str(item)
                     lbl.fb_type = "file"
                     yield lbl
-        except PermissionError:
-            yield Label("⚠ Permission denied", classes="fb-entry")
+            except Exception as e:
+                logging.warning(f"Error rendering item {item} in FileBrowserModal: {e}")
+                continue
 
     def _refresh_list(self):
         """Refresh the file list for current directory."""
@@ -2254,6 +2280,7 @@ class LlamaConfigApp(App):
                 ("XTC_THRESHOLD", "XTC Threshold:"),
             ]),
             ("Speculative Decoding (MTP)", [
+                ("MODEL_DRAFT", "Draft Model:"),
                 ("SPEC_TYPE", "Spec Type:"),
                 ("SPEC_MAX", "Spec Max Draft:"),
                 ("SPEC_MIN", "Spec Min Prob:"),
@@ -2383,6 +2410,13 @@ class LlamaConfigApp(App):
                     FileBrowserModal(start_path=field.value),
                     callback=self._on_model_selected,
                 )
+        elif event.button.id == "btn-browse-model-draft":
+            field = self.fields_by_key.get("MODEL_DRAFT")
+            if field is not None:
+                self.push_screen(
+                    FileBrowserModal(start_path=field.value),
+                    callback=self._on_model_draft_selected,
+                )
         elif event.button.id == "btn-browse-bin":
             field = self.fields_by_key.get("BIN")
             if field is not None:
@@ -2423,6 +2457,13 @@ class LlamaConfigApp(App):
     def _on_model_selected(self, path: str) -> None:
         if path:
             field = self.fields_by_key.get("MODEL")
+            if field is not None:
+                field.value = path
+            self.update_dashboard()
+
+    def _on_model_draft_selected(self, path: str) -> None:
+        if path:
+            field = self.fields_by_key.get("MODEL_DRAFT")
             if field is not None:
                 field.value = path
             self.update_dashboard()
@@ -2625,6 +2666,13 @@ class LlamaConfigApp(App):
         model_info = get_model_info(model_path, app=self)
         base_vram = model_info["size_gib"]
         
+        # Speculative draft model weights
+        draft_vram = 0.0
+        draft_model_path = params.get("MODEL_DRAFT", "")
+        if draft_model_path:
+            draft_info = get_model_info(draft_model_path, app=self)
+            draft_vram = draft_info["size_gib"]
+        
         # NGL offload layers
         ngl = 99
         if "NGL" in params:
@@ -2634,7 +2682,7 @@ class LlamaConfigApp(App):
                 ngl = 99
                 
         model_offload_ratio = min(ngl / 99.0, 1.0)
-        weights_on_gpu = base_vram * model_offload_ratio
+        weights_on_gpu = (base_vram + draft_vram) * model_offload_ratio
         
         # Context size
         ctx = 8192
